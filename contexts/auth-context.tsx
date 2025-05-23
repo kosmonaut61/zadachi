@@ -33,22 +33,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast()
 
   useEffect(() => {
+    console.log("[Auth] Setting up auth state listener")
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("[Auth] Auth state changed:", user ? "User signed in" : "No user")
       setUser(user)
       setLoading(false)
       
-      // Only redirect if we're on the login page and user is signed in
+      // Only redirect if necessary
       if (user && pathname === "/login") {
+        console.log("[Auth] User is signed in, redirecting to home")
         router.push("/")
-      }
-      // Only redirect to login if we're not on the login page and user is signed out
-      else if (!user && pathname !== "/login") {
+      } else if (!user && pathname !== "/login") {
+        console.log("[Auth] No user, redirecting to login")
         router.push("/login")
+      } else {
+        console.log("[Auth] No redirect needed, current path:", pathname)
       }
     })
 
-    return () => unsubscribe()
-  }, [pathname]) // Only depend on pathname changes
+    return () => {
+      console.log("[Auth] Cleaning up auth state listener")
+      unsubscribe()
+    }
+  }, [pathname])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -82,16 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      console.log("[Auth] Starting Google sign in")
       const result = await signInWithPopup(auth, googleProvider)
-      if (result.user) {
-        toast({
-          title: "Success",
-          description: "Successfully signed in with Google",
-        })
-        router.push("/")
-      }
+      console.log("[Auth] Sign in successful:", result.user.email)
+      toast({
+        title: "Success",
+        description: "Successfully signed in with Google",
+      })
+      router.push("/")
     } catch (error: any) {
-      console.error("Error signing in with Google:", error)
+      console.error("[Auth] Sign in error:", error)
       if (error.code === 'auth/popup-closed-by-user') {
         toast({
           title: "Sign in cancelled",
@@ -111,14 +118,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log("[Auth] Starting sign out")
       await firebaseSignOut(auth)
+      console.log("[Auth] Sign out successful")
       toast({
         title: "Success",
         description: "Successfully signed out",
       })
       router.push("/login")
     } catch (error: any) {
-      console.error("Error signing out:", error)
+      console.error("[Auth] Sign out error:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to sign out",

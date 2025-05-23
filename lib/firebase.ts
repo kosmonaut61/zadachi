@@ -13,42 +13,64 @@ const firebaseConfig = {
   measurementId: "G-SF3V8Z44H9"
 };
 
+console.log("[Firebase] Starting initialization");
+
 // Initialize Firebase only if it hasn't been initialized already
 let app: FirebaseApp;
 try {
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  if (getApps().length === 0) {
+    console.log("[Firebase] No existing apps, initializing new app");
+    app = initializeApp(firebaseConfig);
+  } else {
+    console.log("[Firebase] Using existing app instance");
+    app = getApps()[0];
+  }
 } catch (error) {
-  console.error("Error initializing Firebase:", error);
+  console.error("[Firebase] Error initializing Firebase:", error);
   throw error;
 }
 
 // Initialize services
 let analytics = null;
 if (typeof window !== 'undefined') {
-  isSupported().then(yes => yes && (analytics = getAnalytics(app)));
+  console.log("[Firebase] Checking analytics support");
+  isSupported().then(yes => {
+    if (yes) {
+      console.log("[Firebase] Analytics supported, initializing");
+      analytics = getAnalytics(app);
+    } else {
+      console.log("[Firebase] Analytics not supported");
+    }
+  });
 }
 
+console.log("[Firebase] Initializing auth and Firestore");
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Enable offline persistence and handle connection issues
 if (typeof window !== 'undefined') {
+  console.log("[Firebase] Setting up offline persistence");
   // Enable offline persistence
   enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+      console.warn('[Firebase] Multiple tabs open, persistence can only be enabled in one tab at a time.');
     } else if (err.code === 'unimplemented') {
-      console.warn('The current browser does not support persistence.');
+      console.warn('[Firebase] The current browser does not support persistence.');
+    } else {
+      console.error('[Firebase] Error enabling persistence:', err);
     }
   });
 
   // Enable network connection
+  console.log("[Firebase] Enabling network connection");
   enableNetwork(db).catch((err: Error) => {
-    console.error("Error enabling network:", err);
+    console.error("[Firebase] Error enabling network:", err);
   });
 }
 
 // Initialize Google Auth Provider with OAuth configuration
+console.log("[Firebase] Setting up Google Auth Provider");
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
@@ -57,5 +79,7 @@ googleProvider.setCustomParameters({
 // Add scopes if needed
 googleProvider.addScope('profile');
 googleProvider.addScope('email');
+
+console.log("[Firebase] Initialization complete");
 
 export { app, analytics, auth, db, googleProvider }; 
