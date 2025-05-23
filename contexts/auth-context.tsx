@@ -54,10 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only redirect if we're not already on the correct page
       if (user && pathname === "/login") {
         console.log("[AuthProvider] User on login page, redirecting to welcome")
-        router.push("/welcome")
+        // Add a small delay to ensure auth state is settled
+        await new Promise(resolve => setTimeout(resolve, 100))
+        router.replace("/welcome")
       } else if (!user && pathname !== "/login") {
         console.log("[AuthProvider] User not on login page, redirecting to login")
-        router.push("/login")
+        // Add a small delay to ensure auth state is settled
+        await new Promise(resolve => setTimeout(resolve, 100))
+        router.replace("/login")
       } else {
         console.log("[AuthProvider] User already on correct page:", pathname)
       }
@@ -81,7 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
-      router.push("/welcome")
+      // Add a small delay to ensure auth state is settled
+      await new Promise(resolve => setTimeout(resolve, 100))
+      router.replace("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Email sign in error:", error)
       toast({
@@ -105,7 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
-      router.push("/welcome")
+      // Add a small delay to ensure auth state is settled
+      await new Promise(resolve => setTimeout(resolve, 100))
+      router.replace("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Sign up error:", error)
       toast({
@@ -130,7 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
-      router.push("/welcome")
+      // Add a small delay to ensure auth state is settled
+      await new Promise(resolve => setTimeout(resolve, 100))
+      router.replace("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Google sign in error:", error)
       toast({
@@ -154,7 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
-      router.push("/login")
+      // Add a small delay to ensure auth state is settled
+      await new Promise(resolve => setTimeout(resolve, 100))
+      router.replace("/login")
     } catch (error: any) {
       console.error("[AuthProvider] Sign out error:", error)
       toast({
