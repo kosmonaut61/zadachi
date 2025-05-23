@@ -11,7 +11,7 @@ import {
   signInWithPopup
 } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
@@ -28,9 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
-  const pathname = usePathname()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -39,33 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[Auth] Auth state changed:", user ? "User signed in" : "No user")
       setUser(user)
       setLoading(false)
-      
-      // Only redirect if necessary and not already navigating
-      if (!isNavigating) {
-        if (user && pathname === "/login") {
-          console.log("[Auth] User is signed in, redirecting to welcome page")
-          setIsNavigating(true)
-          router.push("/welcome")
-        } else if (!user && pathname !== "/login") {
-          console.log("[Auth] No user, redirecting to login")
-          setIsNavigating(true)
-          router.push("/login")
-        } else {
-          console.log("[Auth] No redirect needed, current path:", pathname)
-        }
-      }
     })
 
     return () => {
       console.log("[Auth] Cleaning up auth state listener")
       unsubscribe()
     }
-  }, [pathname, isNavigating])
-
-  // Reset navigation state when pathname changes
-  useEffect(() => {
-    setIsNavigating(false)
-  }, [pathname])
+  }, [])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -76,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
-      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Sign in error:", error)
@@ -98,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
-      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Sign up error:", error)
@@ -120,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
-      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Google sign in error:", error)
@@ -142,7 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
-      setIsNavigating(true)
       router.push("/login")
     } catch (error: any) {
       console.error("[Auth] Sign out error:", error)
