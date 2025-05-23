@@ -61,21 +61,18 @@ export function ZadachiDrawer({ open, onOpenChange, editingTask }: ZadachiDrawer
     const allowedUsers = selectAllUsers ? [] : selectedUsers
 
     if (isEditing && editingTask) {
-      // Update the task in predefined tasks template
-      const index = predefinedTasksTemplate.findIndex(
-        (t) => t.title === editingTask.title && t.category === editingTask.category
-      )
-      if (index !== -1) {
-        predefinedTasksTemplate[index] = {
-          ...predefinedTasksTemplate[index],
-          title,
-          category,
-          points: pointsValue,
-          allowedUsers,
-          timeframe,
-          frequency,
-        }
-      }
+      // Create a unique identifier for the task
+      const taskId = `${editingTask.title}-${editingTask.category}`
+      
+      // Update the task using the context's updateTask function
+      updateTask(taskId, {
+        title,
+        category,
+        points: pointsValue,
+        allowedUsers,
+        timeframe,
+        frequency,
+      })
     } else {
       createCustomTask(title, category, pointsValue, allowedUsers, timeframe, frequency)
     }

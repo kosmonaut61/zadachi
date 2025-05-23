@@ -727,6 +727,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const removeTask = useCallback((taskId: string) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
+    setTaskUsage((prevUsage) =>
+      prevUsage.filter((u) => u.taskId !== taskId)
+    )
   }, [])
 
   const getTasksByUserId = useCallback(
@@ -772,8 +775,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback((taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => {
     // Update in tasks array
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
+    setTasks((prevTasks: Task[]) =>
+      prevTasks.map((task: Task) =>
         task.id === taskId
           ? {
               ...task,
@@ -783,32 +786,40 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       )
     )
 
-    // Update in predefined tasks template if it exists there
-    const taskToUpdate = tasks.find((t) => t.id === taskId)
-    if (taskToUpdate) {
-      const index = predefinedTasksTemplate.findIndex(
-        (t) => t.title === taskToUpdate.title && t.category === taskToUpdate.category
-      )
-      if (index !== -1) {
-        predefinedTasksTemplate[index] = {
-          ...predefinedTasksTemplate[index],
-          ...updates,
-        }
+    // Update in predefined tasks template
+    const [oldTitle, oldCategory] = taskId.split("-")
+    const index = predefinedTasksTemplate.findIndex(
+      (t: Omit<Task, "id" | "userId">) => t.title === oldTitle && t.category === oldCategory
+    )
+    
+    if (index !== -1) {
+      // Create a new array to trigger state update
+      const updatedTemplate = [...predefinedTasksTemplate]
+      updatedTemplate[index] = {
+        ...updatedTemplate[index],
+        ...updates,
+      }
+      
+      // Update the template
+      predefinedTasksTemplate.length = 0
+      predefinedTasksTemplate.push(...updatedTemplate)
+      
+      // Save to localStorage
+      localStorage.setItem("zadachi-predefined-tasks", JSON.stringify(updatedTemplate))
+    }
+  }, [])
 
-        // Also update in custom tasks if it exists there
-        setCustomTasks((prevCustomTasks) =>
-          prevCustomTasks.map((task) =>
-            task.title === taskToUpdate.title && task.category === taskToUpdate.category
-              ? {
-                  ...task,
-                  ...updates,
-                }
-              : task
-          )
+  const updateTaskUsage = useCallback((taskId: string, usage: Omit<TaskUsage, "taskId">) => {
+    setTaskUsage((prevUsage: TaskUsage[]) => {
+      const existingUsage = prevUsage.find((u: TaskUsage) => u.taskId === taskId)
+      if (existingUsage) {
+        return prevUsage.map((u: TaskUsage) =>
+          u.taskId === taskId ? { ...u, ...usage } : u
         )
       }
-    }
-  }, [tasks])
+      return [...prevUsage, { taskId, ...usage }]
+    })
+  }, [])
 
   // Get available tasks for a user based on timeframe and frequency
   const getAvailableTasksForUser = useCallback(
