@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only redirect if necessary and not already navigating
       if (!isNavigating) {
         if (user && pathname === "/login") {
-          console.log("[Auth] User is signed in, redirecting to manage zadachi")
+          console.log("[Auth] User is signed in, redirecting to welcome page")
           setIsNavigating(true)
-          router.push("/manage-zadachi")
+          router.push("/welcome")
         } else if (!user && pathname !== "/login") {
           console.log("[Auth] No user, redirecting to login")
           setIsNavigating(true)
@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
+      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Sign in error:", error)
@@ -97,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
+      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Sign up error:", error)
@@ -118,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
+      setIsNavigating(true)
       router.push("/welcome")
     } catch (error) {
       console.error("Google sign in error:", error)
