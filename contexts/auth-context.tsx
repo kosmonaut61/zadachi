@@ -51,25 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user)
       setLoading(false)
 
-      // Handle navigation based on auth state
-      if (user) {
-        console.log("[AuthProvider] User is authenticated, checking navigation")
-        if (pathname === "/login") {
-          console.log("[AuthProvider] User on login page, redirecting to welcome")
-          // Force a hard navigation to welcome page
-          window.location.href = "/welcome"
-        } else {
-          console.log("[AuthProvider] User already on correct page:", pathname)
-        }
+      // Only redirect if we're not already on the correct page
+      if (user && pathname === "/login") {
+        console.log("[AuthProvider] User on login page, redirecting to welcome")
+        router.push("/welcome")
+      } else if (!user && pathname !== "/login") {
+        console.log("[AuthProvider] User not on login page, redirecting to login")
+        router.push("/login")
       } else {
-        console.log("[AuthProvider] No user, checking navigation")
-        if (pathname !== "/login") {
-          console.log("[AuthProvider] User not on login page, redirecting to login")
-          // Force a hard navigation to login page
-          window.location.href = "/login"
-        } else {
-          console.log("[AuthProvider] User already on login page")
-        }
+        console.log("[AuthProvider] User already on correct page:", pathname)
       }
     })
 
@@ -77,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AuthProvider] Cleaning up auth state listener")
       unsubscribe()
     }
-  }, [pathname])
+  }, [pathname, router])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -91,8 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
-      // Force a hard navigation to welcome page
-      window.location.href = "/welcome"
+      router.push("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Email sign in error:", error)
       toast({
@@ -116,8 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
-      // Force a hard navigation to welcome page
-      window.location.href = "/welcome"
+      router.push("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Sign up error:", error)
       toast({
@@ -142,8 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
-      // Force a hard navigation to welcome page
-      window.location.href = "/welcome"
+      router.push("/welcome")
     } catch (error) {
       console.error("[AuthProvider] Google sign in error:", error)
       toast({
@@ -167,8 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
-      // Force a hard navigation to login page
-      window.location.href = "/login"
+      router.push("/login")
     } catch (error: any) {
       console.error("[AuthProvider] Sign out error:", error)
       toast({
