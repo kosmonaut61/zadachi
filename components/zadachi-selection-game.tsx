@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { X } from "lucide-react"
@@ -39,8 +39,19 @@ export function ZadachiSelectionGame({
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null)
 
+  // Refs for wheel event handling
+  const containerRef = useRef<HTMLDivElement>(null)
+  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastWheelTime = useRef<number>(0)
+
   // Minimum swipe distance to trigger card change (in pixels)
   const minSwipeDistance = 50
+
+  // Minimum wheel delta to trigger card change
+  const minWheelDelta = 50
+
+  // Debounce time for wheel events (ms)
+  const wheelDebounceTime = 300
 
   // Select 3 random tasks with weighted selection based on frequency and timeframe
   const selectedTasks = useMemo(() => {
@@ -87,9 +98,61 @@ export function ZadachiSelectionGame({
     }
   }, [open])
 
+  // Set up wheel event listener for trackpad gestures
+  useEffect(() => {
+    const currentContainer = containerRef.current
+
+    if (!currentContainer || !open) return
+
+    const handleWheel = (e: WheelEvent) => {
+      // Prevent default to avoid page scrolling
+      e.preventDefault()
+
+      // Get the horizontal scroll delta (positive = scroll right, negative = scroll left)
+      const { deltaX } = e
+
+      // Check if we should process this event (debounce)
+      const now = Date.now()
+      if (now - lastWheelTime.current < wheelDebounceTime) return
+
+      // Update last wheel time
+      lastWheelTime.current = now
+
+      // Clear any existing timeout
+      if (wheelTimeoutRef.current) {
+        clearTimeout(wheelTimeoutRef.current)
+      }
+
+      // Set a timeout to handle the wheel event
+      wheelTimeoutRef.current = setTimeout(() => {
+        // Only process if the delta is significant enough
+        if (Math.abs(deltaX) > minWheelDelta) {
+          if (deltaX > 0) {
+            // Positive deltaX = scroll right = swipe left = next card
+            goToNextCard()
+          } else {
+            // Negative deltaX = scroll left = swipe right = previous card
+            goToPrevCard()
+          }
+        }
+      }, 50) // Small delay to collect wheel events
+    }
+
+    // Add the wheel event listener
+    currentContainer.addEventListener("wheel", handleWheel, { passive: false })
+
+    // Clean up
+    return () => {
+      if (wheelTimeoutRef.current) {
+        clearTimeout(wheelTimeoutRef.current)
+      }
+      currentContainer.removeEventListener("wheel", handleWheel)
+    }
+  }, [open, selectedTasks.length])
+
   // Handle infinite card navigation
   const goToNextCard = () => {
-    if (selectedTasks.length === 0) return
+    if (selectedTasks.length === 0 || isAnimating) return
 
     setSwipeDirection("left")
     setIsAnimating(true)
@@ -102,7 +165,7 @@ export function ZadachiSelectionGame({
   }
 
   const goToPrevCard = () => {
-    if (selectedTasks.length === 0) return
+    if (selectedTasks.length === 0 || isAnimating) return
 
     setSwipeDirection("right")
     setIsAnimating(true)
@@ -208,6 +271,7 @@ export function ZadachiSelectionGame({
 
         {/* Card Swiper */}
         <div
+          ref={containerRef}
           className="flex-1 relative overflow-hidden flex items-center justify-center px-4"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -306,6 +370,11 @@ export function ZadachiSelectionGame({
             </Button>
           </div>
         )}
+
+        {/* Trackpad Hint */}
+        <div className="absolute bottom-20 left-0 right-0 flex justify-center pointer-events-none">
+          <div className="text-white/60 text-xs bg-black/30 px-3 py-1 rounded-full">Two-finger swipe to navigate</div>
+        </div>
       </div>
     </div>
   )
