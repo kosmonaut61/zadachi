@@ -32,42 +32,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { toast } = useToast()
 
+  console.log("[AuthProvider] Current state:", { 
+    user: user?.email, 
+    loading, 
+    pathname,
+    authState: auth.currentUser?.email 
+  })
+
   useEffect(() => {
-    console.log("[Auth] Setting up auth state listener")
+    console.log("[AuthProvider] Setting up auth state listener")
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("[Auth] Auth state changed:", user ? "User signed in" : "No user")
+      console.log("[AuthProvider] Auth state changed:", {
+        user: user?.email,
+        currentPath: pathname,
+        authState: auth.currentUser?.email
+      })
+
       setUser(user)
       setLoading(false)
 
       // Handle navigation based on auth state
       if (user) {
+        console.log("[AuthProvider] User is authenticated, checking navigation")
         if (pathname === "/login") {
+          console.log("[AuthProvider] User on login page, redirecting to welcome")
           router.push("/welcome")
+        } else {
+          console.log("[AuthProvider] User already on correct page:", pathname)
         }
       } else {
+        console.log("[AuthProvider] No user, checking navigation")
         if (pathname !== "/login") {
+          console.log("[AuthProvider] User not on login page, redirecting to login")
           router.push("/login")
+        } else {
+          console.log("[AuthProvider] User already on login page")
         }
       }
     })
 
     return () => {
-      console.log("[Auth] Cleaning up auth state listener")
+      console.log("[AuthProvider] Cleaning up auth state listener")
       unsubscribe()
     }
   }, [pathname, router])
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Starting sign in process...")
+      console.log("[AuthProvider] Starting email sign in process...", { email })
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      console.log("Sign in successful:", userCredential.user.email)
+      console.log("[AuthProvider] Email sign in successful:", {
+        email: userCredential.user.email,
+        authState: auth.currentUser?.email
+      })
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
     } catch (error) {
-      console.error("Sign in error:", error)
+      console.error("[AuthProvider] Email sign in error:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to sign in",
@@ -79,15 +102,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      console.log("Starting sign up process...")
+      console.log("[AuthProvider] Starting sign up process...", { email })
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      console.log("Sign up successful:", userCredential.user.email)
+      console.log("[AuthProvider] Sign up successful:", {
+        email: userCredential.user.email,
+        authState: auth.currentUser?.email
+      })
       toast({
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
     } catch (error) {
-      console.error("Sign up error:", error)
+      console.error("[AuthProvider] Sign up error:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create account",
@@ -99,15 +125,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      console.log("Starting Google sign in process...")
+      console.log("[AuthProvider] Starting Google sign in process...")
       const result = await signInWithPopup(auth, googleProvider)
-      console.log("Google sign in successful:", result.user.email)
+      console.log("[AuthProvider] Google sign in successful:", {
+        email: result.user.email,
+        authState: auth.currentUser?.email,
+        currentPath: pathname
+      })
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
     } catch (error) {
-      console.error("Google sign in error:", error)
+      console.error("[AuthProvider] Google sign in error:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to sign in with Google",
@@ -119,15 +149,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log("[Auth] Starting sign out")
+      console.log("[AuthProvider] Starting sign out process")
       await firebaseSignOut(auth)
-      console.log("[Auth] Sign out successful")
+      console.log("[AuthProvider] Sign out successful:", {
+        previousUser: user?.email,
+        authState: auth.currentUser?.email
+      })
       toast({
         title: "Success",
         description: "Successfully signed out",
       })
     } catch (error: any) {
-      console.error("[Auth] Sign out error:", error)
+      console.error("[AuthProvider] Sign out error:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to sign out",

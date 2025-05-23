@@ -12,8 +12,19 @@ export default function Home() {
   const { user } = useAuth()
   const router = useRouter()
 
+  console.log("[Root] Current state:", {
+    user: user?.email,
+    authState: user ? "authenticated" : "not authenticated"
+  })
+
   useEffect(() => {
+    console.log("[Root] Effect triggered:", {
+      user: user?.email,
+      authState: user ? "authenticated" : "not authenticated"
+    })
+
     if (user) {
+      console.log("[Root] User authenticated, redirecting to welcome")
       router.push("/welcome")
     }
   }, [user, router])
