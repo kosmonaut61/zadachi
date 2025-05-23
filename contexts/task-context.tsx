@@ -2,6 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useUser } from "@/contexts/user-context"
+import { useAuth } from "./auth-context"
+import { db } from "@/lib/firebase"
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from "firebase/firestore"
 
 // Define task categories with their icons and colors
 export const categories = {
@@ -40,6 +43,7 @@ export interface Task {
   title: string
   category: keyof typeof categories
   points: number
+  completed: boolean
   userId: string
   allowedUsers: string[] // IDs of users who can access this task
   timeframe: keyof typeof timeframes
@@ -64,6 +68,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Pick up all trash in a room",
@@ -72,6 +77,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Sweep / Vaccum kitchen floor",
@@ -80,6 +86,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Practice guitar for 15 minutes",
@@ -88,6 +95,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Draw something with chalk outside",
@@ -96,6 +104,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Put away clean laundry",
@@ -104,6 +113,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Pickup 10 things from kids corner",
@@ -112,6 +122,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write or illustrate a story",
@@ -120,6 +131,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Make a healthy snack",
@@ -128,6 +140,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Dance for 10 minutes",
@@ -136,6 +149,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Ride your bike",
@@ -144,6 +158,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do a random act of kindness",
@@ -152,6 +167,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Help prepare a meal",
@@ -160,6 +176,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Brush Teeth",
@@ -168,6 +185,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Clean bathroom sink",
@@ -176,6 +194,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Play a board game",
@@ -184,6 +203,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Watch TV",
@@ -192,6 +212,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Build something with LEGO",
@@ -200,6 +221,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do a puzzle",
@@ -208,6 +230,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write a letter / text to a grandparent",
@@ -216,6 +239,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Wipe down kitchen counters",
@@ -224,6 +248,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Dust a room",
@@ -232,6 +257,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 3,
+    completed: false
   },
   {
     title: "Vacuum a room",
@@ -240,6 +266,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 3,
+    completed: false
   },
   {
     title: "Tidy up shoes",
@@ -248,6 +275,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Put dirty clothes in hamper",
@@ -256,6 +284,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Clean up one room",
@@ -264,6 +293,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Scrub the bathtub",
@@ -272,6 +302,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Wipe down bathroom mirror",
@@ -280,6 +311,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Empty dishwasher",
@@ -288,6 +320,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Clean dining table",
@@ -296,6 +329,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Make a card for someone",
@@ -304,6 +338,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Design a comic strip",
@@ -312,6 +347,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Make something with just paper",
@@ -320,6 +356,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do an activity box thing",
@@ -328,6 +365,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Build a fort & clean it up",
@@ -336,6 +374,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write a joke",
@@ -344,6 +383,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Paint a picture",
@@ -352,6 +392,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Create a dance",
@@ -360,6 +401,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Make something with clay / dough",
@@ -368,6 +410,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Record a silly video",
@@ -376,6 +419,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Pick up trash outside",
@@ -384,6 +428,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Play on trampoline",
@@ -392,6 +437,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Go swimming",
@@ -400,6 +446,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Play catch",
@@ -408,6 +455,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Jump rope",
@@ -416,6 +464,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Go for a nature walk",
@@ -424,6 +473,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Play basketball",
@@ -432,6 +482,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Play on rope course",
@@ -440,6 +491,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Ride a scooter / skateboard / skates",
@@ -448,6 +500,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Water flowers",
@@ -456,6 +509,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Do 10 jumping jacks",
@@ -464,6 +518,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Stretch for 5 minutes",
@@ -472,6 +527,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Hula hoop",
@@ -480,6 +536,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Balance on one foot",
@@ -488,6 +545,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Do a yoga pose",
@@ -496,6 +554,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Do an exercise routine",
@@ -504,6 +563,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Play tag",
@@ -512,6 +572,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Go for a walk",
@@ -520,6 +581,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Pushups",
@@ -528,6 +590,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Treadmill for 15 minutes",
@@ -536,6 +599,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
 ]
 
@@ -543,9 +607,9 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
 interface TaskContextType {
   tasks: Task[]
   taskUsage: TaskUsage[]
-  addTask: (task: Omit<Task, "id">) => void
+  addTask: (task: Omit<Task, "id" | "userId">) => Promise<void>
   completeTask: (taskId: string) => number
-  removeTask: (taskId: string) => void
+  removeTask: (taskId: string) => Promise<void>
   getTasksByUserId: (userId: string) => Task[]
   getAvailableTasksForUser: (userId: string) => Omit<Task, "id" | "userId">[]
   createCustomTask: (
@@ -556,12 +620,13 @@ interface TaskContextType {
     timeframe: keyof typeof timeframes,
     frequency: keyof typeof frequencies,
   ) => void
-  updateTask: (taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => void
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
   deleteTask: (taskId: string) => void
   resetTaskUsage: () => void
   resetAllTasks: () => void
   removeAllAssignedTasks: () => void
   clearAllZadachiTemplates: () => void
+  loading: boolean
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -576,18 +641,37 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [taskUsage, setTaskUsage] = useState<TaskUsage[]>([])
   const [customTasks, setCustomTasks] = useState<Omit<Task, "id" | "userId">[]>([])
   const { updateUserPoints, users } = useUser()
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
 
-  // Load tasks from localStorage on mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem("zadachi-tasks")
-    if (savedTasks) {
+    if (!user) {
+      setTasks([])
+      setLoading(false)
+      return
+    }
+
+    const fetchTasks = async () => {
       try {
-        setTasks(JSON.parse(savedTasks))
-      } catch (e) {
-        console.error("Failed to parse saved tasks", e)
+        const tasksQuery = query(
+          collection(db, "tasks"),
+          where("userId", "==", user.uid)
+        )
+        const querySnapshot = await getDocs(tasksQuery)
+        const fetchedTasks = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Task[]
+        setTasks(fetchedTasks)
+      } catch (error) {
+        console.error("Error fetching tasks:", error)
+      } finally {
+        setLoading(false)
       }
     }
-  }, [])
+
+    fetchTasks()
+  }, [user])
 
   // Load task usage from localStorage on mount
   useEffect(() => {
@@ -668,46 +752,23 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("zadachi-predefined-tasks", JSON.stringify(predefinedTasksTemplate))
   }, [predefinedTasksTemplate])
 
-  const addTask = useCallback((task: Omit<Task, "id">) => {
-    const newTask: Task = {
-      ...task,
-      id: `task-${Date.now()}`,
-    }
-    setTasks((prevTasks) => [...prevTasks, newTask])
+  const addTask = async (task: Omit<Task, "id" | "userId">) => {
+    if (!user) return
 
-    // Update task usage
-    const taskTemplateId = getTaskTemplateId(task.title, task.category)
-    const now = new Date()
-
-    setTaskUsage((prevUsage) => {
-      // Check if we already have usage for this task and user
-      const existingUsageIndex = prevUsage.findIndex((u) => u.taskId === taskTemplateId && u.userId === task.userId)
-
-      if (existingUsageIndex >= 0) {
-        // Update existing usage
-        const updatedUsage = [...prevUsage]
-        updatedUsage[existingUsageIndex] = {
-          ...updatedUsage[existingUsageIndex],
-          lastUsedDate: now.toISOString(),
-          usageCount: updatedUsage[existingUsageIndex].usageCount + 1,
-          timeframe: task.timeframe, // Update timeframe in case it changed
-        }
-        return updatedUsage
-      } else {
-        // Add new usage
-        return [
-          ...prevUsage,
-          {
-            taskId: taskTemplateId,
-            userId: task.userId,
-            lastUsedDate: now.toISOString(),
-            usageCount: 1,
-            timeframe: task.timeframe,
-          },
-        ]
+    try {
+      const taskRef = doc(collection(db, "tasks"))
+      const newTask: Task = {
+        ...task,
+        id: taskRef.id,
+        userId: user.uid
       }
-    })
-  }, [])
+      await setDoc(taskRef, newTask)
+      setTasks(prev => [...prev, newTask])
+    } catch (error) {
+      console.error("Error adding task:", error)
+      throw error
+    }
+  }
 
   const completeTask = useCallback(
     (taskId: string) => {
@@ -725,12 +786,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [tasks, updateUserPoints],
   )
 
-  const removeTask = useCallback((taskId: string) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
-    setTaskUsage((prevUsage) =>
-      prevUsage.filter((u) => u.taskId !== taskId)
-    )
-  }, [])
+  const removeTask = async (taskId: string) => {
+    if (!user) return
+
+    try {
+      await deleteDoc(doc(db, "tasks", taskId))
+      setTasks(prev => prev.filter(task => task.id !== taskId))
+    } catch (error) {
+      console.error("Error removing task:", error)
+      throw error
+    }
+  }
 
   const getTasksByUserId = useCallback(
     (userId: string) => {
@@ -773,41 +839,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("zadachi-custom-tasks")
   }, [])
 
-  const updateTask = useCallback((taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => {
-    // Update in tasks array
-    setTasks((prevTasks: Task[]) =>
-      prevTasks.map((task: Task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              ...updates,
-            }
-          : task
-      )
-    )
+  const updateTask = async (taskId: string, updates: Partial<Task>) => {
+    if (!user) return
 
-    // Update in predefined tasks template
-    const [oldTitle, oldCategory] = taskId.split("-")
-    const index = predefinedTasksTemplate.findIndex(
-      (t: Omit<Task, "id" | "userId">) => t.title === oldTitle && t.category === oldCategory
-    )
-    
-    if (index !== -1) {
-      // Create a new array to trigger state update
-      const updatedTemplate = [...predefinedTasksTemplate]
-      updatedTemplate[index] = {
-        ...updatedTemplate[index],
-        ...updates,
-      }
-      
-      // Update the template
-      predefinedTasksTemplate.length = 0
-      predefinedTasksTemplate.push(...updatedTemplate)
-      
-      // Save to localStorage
-      localStorage.setItem("zadachi-predefined-tasks", JSON.stringify(updatedTemplate))
+    try {
+      const taskRef = doc(db, "tasks", taskId)
+      await setDoc(taskRef, updates, { merge: true })
+      setTasks(prev =>
+        prev.map(task =>
+          task.id === taskId ? { ...task, ...updates } : task
+        )
+      )
+    } catch (error) {
+      console.error("Error updating task:", error)
+      throw error
     }
-  }, [])
+  }
 
   const updateTaskUsage = useCallback((taskId: string, usage: Omit<TaskUsage, "taskId">) => {
     setTaskUsage((prevUsage: TaskUsage[]) => {
@@ -908,6 +955,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         allowedUsers,
         timeframe,
         frequency,
+        completed: false
       }
 
       // Check if task already exists
@@ -981,6 +1029,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         resetAllTasks,
         removeAllAssignedTasks,
         clearAllZadachiTemplates,
+        loading,
       }}
     >
       {children}

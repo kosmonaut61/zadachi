@@ -1,172 +1,135 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
+import { useAuth } from "./auth-context"
+import { db } from "@/lib/firebase"
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from "firebase/firestore"
 
 // Define user type
 export interface User {
   id: string
-  firstName: string
-  lastName: string
-  totalPoints: number
+  name: string
+  points: number
+  parentId: string
 }
-
-// Define initial users
-const initialUsers: User[] = [
-  {
-    id: "user1",
-    firstName: "User",
-    lastName: "One",
-    totalPoints: 0,
-  },
-  {
-    id: "user2",
-    firstName: "User",
-    lastName: "Two",
-    totalPoints: 0,
-  },
-]
 
 interface UserContextType {
   users: User[]
-  currentUser: User
-  setCurrentUser: (user: User) => void
-  addUser: (firstName: string, lastName: string, startingPoints: number) => void
-  updateUser: (userId: string, updates: Partial<User>) => void
-  deleteUser: (userId: string) => void
-  updateUserPoints: (userId: string, points: number) => void
+  addUser: (user: Omit<User, "id">) => Promise<void>
+  updateUser: (userId: string, updates: Partial<User>) => Promise<void>
+  removeUser: (userId: string) => Promise<void>
+  updateUserPoints: (userId: string, points: number) => Promise<void>
+  loading: boolean
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-export function UserProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>(initialUsers)
-  const [currentUser, setCurrentUser] = useState<User>(initialUsers[0])
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
 
-  // Load users from localStorage on mount
   useEffect(() => {
-    const savedUsers = localStorage.getItem("zadachi-users")
-    if (savedUsers) {
+    if (!user) {
+      setUsers([])
+      setLoading(false)
+      return
+    }
+
+    const fetchUsers = async () => {
       try {
-        const parsedUsers = JSON.parse(savedUsers)
-        setUsers(parsedUsers)
-
-        // Set current user to the first user or keep the default
-        if (parsedUsers.length > 0) {
-          const savedCurrentUserId = localStorage.getItem("zadachi-current-user-id")
-          if (savedCurrentUserId) {
-            const savedCurrentUser = parsedUsers.find((u: User) => u.id === savedCurrentUserId)
-            if (savedCurrentUser) {
-              setCurrentUser(savedCurrentUser)
-            } else {
-              setCurrentUser(parsedUsers[0])
-            }
-          } else {
-            setCurrentUser(parsedUsers[0])
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse saved users", e)
+        const usersQuery = query(
+          collection(db, "users"),
+          where("parentId", "==", user.uid)
+        )
+        const querySnapshot = await getDocs(usersQuery)
+        const fetchedUsers = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as User[]
+        setUsers(fetchedUsers)
+      } catch (error) {
+        console.error("Error fetching users:", error)
+      } finally {
+        setLoading(false)
       }
     }
-  }, [])
 
-  // Save users to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem("zadachi-users", JSON.stringify(users))
-  }, [users])
+    fetchUsers()
+  }, [user])
 
-  // Save current user ID to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("zadachi-current-user-id", currentUser.id)
-  }, [currentUser.id])
+  const addUser = async (userData: Omit<User, "id">) => {
+    if (!user) return
 
-  const addUser = useCallback((firstName: string, lastName: string, startingPoints: number) => {
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      firstName,
-      lastName,
-      totalPoints: startingPoints,
+    try {
+      const userRef = doc(collection(db, "users"))
+      const newUser: User = {
+        ...userData,
+        id: userRef.id
+      }
+      await setDoc(userRef, newUser)
+      setUsers(prev => [...prev, newUser])
+    } catch (error) {
+      console.error("Error adding user:", error)
+      throw error
     }
-    setUsers((prevUsers) => [...prevUsers, newUser])
-  }, [])
+  }
 
-  const updateUser = useCallback(
-    (userId: string, updates: Partial<User>) => {
-      setUsers((prevUsers) => {
-        const updatedUsers = prevUsers.map((user) => {
-          if (user.id === userId) {
-            return { ...user, ...updates }
-          }
-          return user
-        })
+  const updateUser = async (userId: string, updates: Partial<User>) => {
+    if (!user) return
 
-        return updatedUsers
-      })
+    try {
+      const userRef = doc(db, "users", userId)
+      await setDoc(userRef, updates, { merge: true })
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, ...updates } : u
+        )
+      )
+    } catch (error) {
+      console.error("Error updating user:", error)
+      throw error
+    }
+  }
 
-      // Update current user separately if it's the one being updated
-      if (currentUser.id === userId) {
-        setCurrentUser((prevCurrentUser) => ({
-          ...prevCurrentUser,
-          ...updates,
-        }))
-      }
-    },
-    [currentUser.id],
-  )
+  const removeUser = async (userId: string) => {
+    if (!user) return
 
-  const updateUserPoints = useCallback(
-    (userId: string, points: number) => {
-      setUsers((prevUsers) => {
-        const updatedUsers = prevUsers.map((user) => {
-          if (user.id === userId) {
-            return { ...user, totalPoints: user.totalPoints + points }
-          }
-          return user
-        })
+    try {
+      await deleteDoc(doc(db, "users", userId))
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch (error) {
+      console.error("Error removing user:", error)
+      throw error
+    }
+  }
 
-        return updatedUsers
-      })
+  const updateUserPoints = async (userId: string, points: number) => {
+    if (!user) return
 
-      // Update current user separately if it's the one being updated
-      if (currentUser.id === userId) {
-        setCurrentUser((prevCurrentUser) => ({
-          ...prevCurrentUser,
-          totalPoints: prevCurrentUser.totalPoints + points,
-        }))
-      }
-    },
-    [currentUser.id],
-  )
-
-  const deleteUser = useCallback(
-    (userId: string) => {
-      // Don't delete if it's the last user
-      setUsers((prevUsers) => {
-        if (prevUsers.length <= 1) return prevUsers
-
-        const newUsers = prevUsers.filter((user) => user.id !== userId)
-
-        // If current user is deleted, switch to first available user
-        if (currentUser.id === userId) {
-          setCurrentUser(newUsers[0])
-        }
-
-        return newUsers
-      })
-    },
-    [currentUser.id],
-  )
+    try {
+      const userRef = doc(db, "users", userId)
+      await setDoc(userRef, { points }, { merge: true })
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, points } : u
+        )
+      )
+    } catch (error) {
+      console.error("Error updating user points:", error)
+      throw error
+    }
+  }
 
   return (
     <UserContext.Provider
       value={{
         users,
-        currentUser,
-        setCurrentUser,
         addUser,
         updateUser,
-        deleteUser,
+        removeUser,
         updateUserPoints,
+        loading
       }}
     >
       {children}
