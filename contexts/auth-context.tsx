@@ -11,7 +11,7 @@ import {
   signInWithPopup
 } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
@@ -29,21 +29,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
 
   useEffect(() => {
     console.log("[Auth] Setting up auth state listener")
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("[Auth] Auth state changed:", user ? "User signed in" : "No user")
       setUser(user)
       setLoading(false)
+
+      // Handle navigation based on auth state
+      if (user) {
+        if (pathname === "/login") {
+          router.push("/welcome")
+        }
+      } else {
+        if (pathname !== "/login") {
+          router.push("/login")
+        }
+      }
     })
 
     return () => {
       console.log("[Auth] Cleaning up auth state listener")
       unsubscribe()
     }
-  }, [])
+  }, [pathname, router])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -54,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       })
-      router.push("/welcome")
     } catch (error) {
       console.error("Sign in error:", error)
       toast({
@@ -75,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "Your account has been created successfully.",
       })
-      router.push("/welcome")
     } catch (error) {
       console.error("Sign up error:", error)
       toast({
@@ -96,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
-      await new Promise(resolve => setTimeout(resolve, 100))
-      router.push("/welcome")
     } catch (error) {
       console.error("Google sign in error:", error)
       toast({
@@ -118,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
-      router.push("/login")
     } catch (error: any) {
       console.error("[Auth] Sign out error:", error)
       toast({

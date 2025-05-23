@@ -2,15 +2,17 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get("session")
+  // Get the Firebase auth token from the Authorization header
+  const authHeader = request.headers.get("Authorization")
+  const isAuthenticated = authHeader?.startsWith("Bearer ")
 
   // If the user is not logged in and trying to access a protected route
-  if (!session && !request.nextUrl.pathname.startsWith("/login")) {
+  if (!isAuthenticated && !request.nextUrl.pathname.startsWith("/login")) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
   // If the user is logged in and trying to access the login page
-  if (session && request.nextUrl.pathname.startsWith("/login")) {
+  if (isAuthenticated && request.nextUrl.pathname.startsWith("/login")) {
     return NextResponse.redirect(new URL("/welcome", request.url))
   }
 

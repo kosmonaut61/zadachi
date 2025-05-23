@@ -15,14 +15,12 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       router.push("/welcome")
-    } else {
-      router.push("/login")
     }
   }, [user, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p>Redirecting...</p>
+      <p>Loading...</p>
     </div>
   )
 }
