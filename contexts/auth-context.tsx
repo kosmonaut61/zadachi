@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      router.push("/")
     } catch (error) {
       console.error("Error signing in:", error)
       throw error
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
+      router.push("/")
     } catch (error) {
       console.error("Error signing up:", error)
       throw error
@@ -58,10 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider)
-      router.push("/")
-    } catch (error) {
+      const result = await signInWithPopup(auth, googleProvider)
+      if (result.user) {
+        router.push("/")
+      }
+    } catch (error: any) {
       console.error("Error signing in with Google:", error)
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in was cancelled')
+      }
       throw error
     }
   }

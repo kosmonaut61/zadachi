@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -15,6 +16,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const { signIn, signUp, signInWithGoogle } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
 
   const handleEmailAuth = async (isSignUp: boolean) => {
@@ -30,6 +32,11 @@ export default function Login() {
     } catch (error) {
       console.error("Auth error:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
+      toast({
+        title: "Error",
+        description: "Failed to sign in. Please check your credentials.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -37,15 +44,15 @@ export default function Login() {
 
   const handleGoogleSignIn = async () => {
     try {
-      setIsLoading(true)
-      setError("")
       await signInWithGoogle()
-      router.push("/")
     } catch (error) {
       console.error("Google sign-in error:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
-    } finally {
-      setIsLoading(false)
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -75,6 +82,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -86,6 +94,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
@@ -105,6 +114,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -116,6 +126,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="new-password"
                   />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
