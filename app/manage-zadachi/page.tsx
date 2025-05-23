@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/auth-context"
 
 // Disable static generation for this page
 export const dynamic = "force-dynamic"
+export const runtime = "edge"
 
 export default function ManageZadachi() {
   const { user } = useAuth()
