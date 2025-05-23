@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only redirect if necessary and not already navigating
       if (!isNavigating) {
         if (user && pathname === "/login") {
-          console.log("[Auth] User is signed in, redirecting to home")
+          console.log("[Auth] User is signed in, redirecting to manage zadachi")
           setIsNavigating(true)
-          router.push("/")
+          router.push("/manage-zadachi")
         } else if (!user && pathname !== "/login") {
           console.log("[Auth] No user, redirecting to login")
           setIsNavigating(true)
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       setIsNavigating(true)
-      router.push("/")
+      router.push("/manage-zadachi")
     } catch (error: any) {
       console.error("Error signing in:", error)
       toast({
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
       setIsNavigating(true)
-      router.push("/")
+      router.push("/manage-zadachi")
     } catch (error: any) {
       console.error("Error signing up:", error)
       toast({
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Successfully signed in with Google",
       })
       setIsNavigating(true)
-      router.push("/")
+      router.push("/manage-zadachi")
     } catch (error: any) {
       console.error("[Auth] Sign in error:", error)
       if (error.code === 'auth/popup-closed-by-user') {
