@@ -11,7 +11,7 @@ import {
   signInWithPopup
 } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
@@ -29,27 +29,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
-      if (user) {
-        // User is signed in
+      
+      // Only redirect if we're on the login page and user is signed in
+      if (user && pathname === "/login") {
         router.push("/")
-      } else {
-        // User is signed out
+      }
+      // Only redirect to login if we're not on the login page and user is signed out
+      else if (!user && pathname !== "/login") {
         router.push("/login")
       }
     })
 
     return () => unsubscribe()
-  }, [router])
+  }, [pathname]) // Only depend on pathname changes
 
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      router.push("/")
     } catch (error: any) {
       console.error("Error signing in:", error)
       toast({
@@ -64,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
+      router.push("/")
     } catch (error: any) {
       console.error("Error signing up:", error)
       toast({
@@ -83,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           title: "Success",
           description: "Successfully signed in with Google",
         })
+        router.push("/")
       }
     } catch (error: any) {
       console.error("Error signing in with Google:", error)
@@ -110,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
+      router.push("/login")
     } catch (error: any) {
       console.error("Error signing out:", error)
       toast({
