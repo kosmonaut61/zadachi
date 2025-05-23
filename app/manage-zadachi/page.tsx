@@ -11,8 +11,13 @@ import { useTask, categories, predefinedTasksTemplate, timeframes, type Task } f
 import { cn } from "@/lib/utils"
 import { ZadachiDrawer } from "@/components/zadachi-drawer"
 import { OptionsMenu, type SortOption, type SortDirection } from "@/components/options-menu"
+import { useAuth } from "@/contexts/auth-context"
+
+// Disable static generation for this page
+export const dynamic = "force-dynamic"
 
 export default function ManageZadachi() {
+  const { user } = useAuth()
   const { users } = useUser()
   const { deleteTask, resetAllTasks } = useTask()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -20,6 +25,15 @@ export default function ManageZadachi() {
   const [sortBy, setSortBy] = useState<SortOption>("title")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [refreshKey, setRefreshKey] = useState(0) // Used to force re-render
+
+  // If not authenticated, show a message
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Please sign in to manage tasks</p>
+      </div>
+    )
+  }
 
   // Force a refresh of the task list
   const refreshTaskList = useCallback(() => {
