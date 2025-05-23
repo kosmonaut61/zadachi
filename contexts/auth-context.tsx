@@ -69,14 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      setIsNavigating(true)
-      router.push("/manage-zadachi")
-    } catch (error: any) {
-      console.error("Error signing in:", error)
+      console.log("Starting sign in process...")
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      console.log("Sign in successful:", userCredential.user.email)
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      })
+      router.push("/welcome")
+    } catch (error) {
+      console.error("Sign in error:", error)
       toast({
         title: "Error",
-        description: error.message || "Failed to sign in",
+        description: error instanceof Error ? error.message : "Failed to sign in",
         variant: "destructive",
       })
       throw error
@@ -85,14 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
-      setIsNavigating(true)
-      router.push("/manage-zadachi")
-    } catch (error: any) {
-      console.error("Error signing up:", error)
+      console.log("Starting sign up process...")
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      console.log("Sign up successful:", userCredential.user.email)
+      toast({
+        title: "Welcome!",
+        description: "Your account has been created successfully.",
+      })
+      router.push("/welcome")
+    } catch (error) {
+      console.error("Sign up error:", error)
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: error instanceof Error ? error.message : "Failed to create account",
         variant: "destructive",
       })
       throw error
@@ -101,30 +111,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      console.log("[Auth] Starting Google sign in")
+      console.log("Starting Google sign in process...")
       const result = await signInWithPopup(auth, googleProvider)
-      console.log("[Auth] Sign in successful:", result.user.email)
+      console.log("Google sign in successful:", result.user.email)
       toast({
-        title: "Success",
-        description: "Successfully signed in with Google",
+        title: "Welcome!",
+        description: "You have successfully signed in with Google.",
       })
-      setIsNavigating(true)
-      router.push("/manage-zadachi")
-    } catch (error: any) {
-      console.error("[Auth] Sign in error:", error)
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast({
-          title: "Sign in cancelled",
-          description: "You closed the sign-in window",
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to sign in with Google",
-          variant: "destructive",
-        })
-      }
+      router.push("/welcome")
+    } catch (error) {
+      console.error("Google sign in error:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to sign in with Google",
+        variant: "destructive",
+      })
       throw error
     }
   }
