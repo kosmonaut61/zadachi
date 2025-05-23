@@ -25,11 +25,7 @@ export function Navigation() {
   return (
     <header className="border-b p-4 flex justify-between items-center relative">
       <h1 className="text-xl font-bold">
-        {pathname === "/manage-users"
-          ? "Manage Users"
-          : pathname === "/manage-zadachi"
-            ? "Manage Zadachi"
-            : "My Zadachi"}
+        {pathname === "/manage-users" ? "Manage Users" : pathname === "/manage-zadachi" ? "Manage Zadachi" : "Zadachi"}
       </h1>
       <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
         <span className="sr-only">Menu</span>
@@ -61,7 +57,7 @@ export function Navigation() {
                 onClick={() => handleUserChange(user)}
               >
                 <span className="mr-2">{pathname === "/" && currentUser.id === user.id ? "•" : ""}</span>
-                {user.firstName}'s Zadachi
+                {user.firstName} {user.lastName}'s Zadachi
               </button>
             ))}
           </div>

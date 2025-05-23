@@ -11,11 +11,13 @@ import { useUser } from "@/contexts/user-context"
 import { useTask, categories } from "@/contexts/task-context"
 import { CategoryFilter } from "@/components/category-filter"
 import { ZadachiSelectionGame } from "@/components/zadachi-selection-game"
+import { PointsRedemptionModal } from "@/components/points-redemption-modal"
 
 export default function Home() {
   const [showTaskSelection, setShowTaskSelection] = useState(false)
+  const [showRedemption, setShowRedemption] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { currentUser } = useUser()
+  const { currentUser, updateUser } = useUser()
   const { tasks, addTask, completeTask, removeTask, getTasksByUserId, getAvailableTasksForUser } = useTask()
 
   const userTasks = getTasksByUserId(currentUser.id)
@@ -50,6 +52,12 @@ export default function Home() {
     completeTask(taskId)
   }
 
+  const handleRedeemPoints = (points: number) => {
+    updateUser(currentUser.id, {
+      totalPoints: currentUser.totalPoints - points,
+    })
+  }
+
   return (
     <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
@@ -64,7 +72,9 @@ export default function Home() {
             </h2>
             <p className="text-sm text-gray-500">Total Points • {currentUser.totalPoints}</p>
           </div>
-          <Button variant="outline">Redeem</Button>
+          <Button variant="outline" onClick={() => setShowRedemption(true)}>
+            Redeem
+          </Button>
         </div>
 
         {/* Tasks List */}
@@ -121,6 +131,15 @@ export default function Home() {
           availableTasks={tasksNotAlreadyAssigned}
           onSelectTask={handleAddTask}
           userName={`${currentUser.firstName} ${currentUser.lastName}`}
+        />
+
+        {/* Points Redemption Modal */}
+        <PointsRedemptionModal
+          open={showRedemption}
+          onOpenChange={setShowRedemption}
+          userName={`${currentUser.firstName} ${currentUser.lastName}`}
+          totalPoints={currentUser.totalPoints}
+          onRedeem={handleRedeemPoints}
         />
       </main>
 

@@ -14,14 +14,14 @@ export interface User {
 const initialUsers: User[] = [
   {
     id: "user1",
-    firstName: "Ruby",
-    lastName: "Hays",
+    firstName: "User",
+    lastName: "One",
     totalPoints: 0,
   },
   {
     id: "user2",
-    firstName: "Graham",
-    lastName: "Hays",
+    firstName: "User",
+    lastName: "Two",
     totalPoints: 0,
   },
 ]
@@ -100,14 +100,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
           return user
         })
 
-        // If we're updating the current user, update the current user state too
-        const updatedCurrentUser = updatedUsers.find((u) => u.id === currentUser.id)
-        if (updatedCurrentUser && currentUser.id === userId) {
-          setCurrentUser(updatedCurrentUser)
-        }
-
         return updatedUsers
       })
+
+      // Update current user separately if it's the one being updated
+      if (currentUser.id === userId) {
+        setCurrentUser((prevCurrentUser) => ({
+          ...prevCurrentUser,
+          ...updates,
+        }))
+      }
     },
     [currentUser.id],
   )
@@ -122,14 +124,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
           return user
         })
 
-        // If we're updating the current user, update the current user state too
-        const updatedCurrentUser = updatedUsers.find((u) => u.id === currentUser.id)
-        if (updatedCurrentUser && currentUser.id === userId) {
-          setCurrentUser(updatedCurrentUser)
-        }
-
         return updatedUsers
       })
+
+      // Update current user separately if it's the one being updated
+      if (currentUser.id === userId) {
+        setCurrentUser((prevCurrentUser) => ({
+          ...prevCurrentUser,
+          totalPoints: prevCurrentUser.totalPoints + points,
+        }))
+      }
     },
     [currentUser.id],
   )

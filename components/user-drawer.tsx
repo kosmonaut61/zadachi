@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { useUser, type User } from "@/contexts/user-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -72,6 +72,9 @@ export function UserDrawer({ open, onOpenChange, editingUser }: UserDrawerProps)
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="border-b p-4">
           <SheetTitle>{isEditing ? "Edit User" : "Create New User"}</SheetTitle>
+          <SheetDescription>
+            {isEditing ? "Update user information and points." : "Add a new user to your family."}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-auto p-4">
