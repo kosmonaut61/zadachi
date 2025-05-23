@@ -148,11 +148,7 @@ export default function Home() {
         <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
         <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={() => setShowTaskSelection(true)}>
           <Plus className="h-6 w-6" />
-<<<<<<< HEAD
-          <span className="sr-only">Add new tasks</span>
-=======
           <span className="sr-only">Add new task</span>
->>>>>>> a955225771e7eddc94a3cebb0fd61c27eb45ffdc
         </Button>
       </footer>
     </div>
