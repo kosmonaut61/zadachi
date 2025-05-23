@@ -7,7 +7,7 @@ import { MoreHorizontal, Plus } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Navigation } from "@/components/navigation"
 import { useUser } from "@/contexts/user-context"
-import { useTask, categories, predefinedTasksTemplate, timeframes } from "@/contexts/task-context"
+import { useTask, categories, predefinedTasksTemplate, timeframes, type Task } from "@/contexts/task-context-new"
 import { cn } from "@/lib/utils"
 import { ZadachiDrawer } from "@/components/zadachi-drawer"
 import { OptionsMenu, type SortOption, type SortDirection } from "@/components/options-menu"
@@ -16,7 +16,7 @@ export default function ManageZadachi() {
   const { users } = useUser()
   const { deleteTask, resetAllTasks } = useTask()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<(typeof predefinedTasksTemplate)[0] | null>(null)
+  const [editingTask, setEditingTask] = useState<Omit<Task, "id" | "userId"> | null>(null)
   const [sortBy, setSortBy] = useState<SortOption>("title")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [refreshKey, setRefreshKey] = useState(0) // Used to force re-render
@@ -44,7 +44,7 @@ export default function ManageZadachi() {
           comparison = a.points - b.points
           break
         case "frequency":
-          comparison = a.frequency - b.frequency
+          comparison = Number(a.frequency) - Number(b.frequency)
           break
         case "timeframe":
           // Custom order: daily, weekly, monthly
@@ -64,7 +64,7 @@ export default function ManageZadachi() {
     setIsDrawerOpen(true)
   }
 
-  const handleEditZadachi = (task: (typeof predefinedTasksTemplate)[0]) => {
+  const handleEditZadachi = (task: Omit<Task, "id" | "userId">) => {
     setEditingTask(task)
     setIsDrawerOpen(true)
   }
@@ -104,7 +104,7 @@ export default function ManageZadachi() {
     return allowedUsers
       .map((userId) => {
         const user = users.find((u) => u.id === userId)
-        return user ? user.firstName : ""
+        return user ? user.name : ""
       })
       .filter(Boolean)
       .join(", ")

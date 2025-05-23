@@ -5,20 +5,61 @@ import { useAuth } from "./auth-context"
 import { db } from "@/lib/firebase"
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from "firebase/firestore"
 
+// Define task categories with their icons and colors
+export const categories = {
+  exercise: { icon: "🔥", color: "bg-orange-100" },
+  water: { icon: "💧", color: "bg-blue-100" },
+  cleaning: { icon: "🧹", color: "bg-green-100" },
+  home: { icon: "🏠", color: "bg-red-100" },
+  family: { icon: "💖", color: "bg-pink-100" },
+  creativity: { icon: "⭐", color: "bg-yellow-100" },
+  meditation: { icon: "👁️", color: "bg-purple-100" },
+  general: { icon: "💎", color: "bg-gray-100" },
+  chill: { icon: "❄️", color: "bg-teal-100" },
+  outdoors: { icon: "🌿", color: "bg-green-100" },
+  unknown: { icon: "❓", color: "bg-slate-100" },
+}
+
+// Define timeframe options
+export const timeframes = {
+  daily: "Daily",
+  weekly: "Weekly",
+  monthly: "Monthly",
+}
+
+// Define frequency options
+export const frequencies = {
+  1: "1 time",
+  2: "2 times",
+  3: "3 times",
+  5: "5 times",
+  10: "10 times",
+}
+
 export interface Task {
   id: string
   title: string
-  category: string
+  category: keyof typeof categories
   points: number
   completed: boolean
   userId: string
+  allowedUsers: string[]
+  timeframe: keyof typeof timeframes
+  frequency: keyof typeof frequencies
 }
+
+// Predefined tasks template
+export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
+  // ... existing predefined tasks ...
+]
 
 interface TaskContextType {
   tasks: Task[]
   addTask: (task: Omit<Task, "id" | "userId">) => Promise<void>
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
   removeTask: (taskId: string) => Promise<void>
+  deleteTask: (taskId: string) => void
+  resetAllTasks: () => void
   loading: boolean
 }
 
@@ -105,6 +146,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const deleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId))
+  }
+
+  const resetAllTasks = () => {
+    setTasks([])
+  }
+
   return (
     <TaskContext.Provider
       value={{
@@ -112,6 +161,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         addTask,
         updateTask,
         removeTask,
+        deleteTask,
+        resetAllTasks,
         loading
       }}
     >
