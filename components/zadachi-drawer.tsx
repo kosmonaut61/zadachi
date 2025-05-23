@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { useUser } from "@/contexts/user-context"
-import { useTask, categories, timeframes, frequencies, type Task } from "@/contexts/task-context"
+import { useTask, categories, timeframes, frequencies, predefinedTasksTemplate, type Task } from "@/contexts/task-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -18,7 +18,7 @@ interface ZadachiDrawerProps {
 
 export function ZadachiDrawer({ open, onOpenChange, editingTask }: ZadachiDrawerProps) {
   const { users } = useUser()
-  const { createCustomTask } = useTask()
+  const { createCustomTask, updateTask } = useTask()
 
   // Form states
   const [title, setTitle] = useState("")
@@ -60,7 +60,25 @@ export function ZadachiDrawer({ open, onOpenChange, editingTask }: ZadachiDrawer
 
     const allowedUsers = selectAllUsers ? [] : selectedUsers
 
-    createCustomTask(title, category, pointsValue, allowedUsers, timeframe, frequency)
+    if (isEditing && editingTask) {
+      // Update the task in predefined tasks template
+      const index = predefinedTasksTemplate.findIndex(
+        (t) => t.title === editingTask.title && t.category === editingTask.category
+      )
+      if (index !== -1) {
+        predefinedTasksTemplate[index] = {
+          ...predefinedTasksTemplate[index],
+          title,
+          category,
+          points: pointsValue,
+          allowedUsers,
+          timeframe,
+          frequency,
+        }
+      }
+    } else {
+      createCustomTask(title, category, pointsValue, allowedUsers, timeframe, frequency)
+    }
 
     // Close the drawer
     onOpenChange(false)

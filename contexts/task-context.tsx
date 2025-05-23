@@ -628,6 +628,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Load predefined tasks from localStorage on mount
+  useEffect(() => {
+    const savedPredefinedTasks = localStorage.getItem("zadachi-predefined-tasks")
+    if (savedPredefinedTasks) {
+      try {
+        const parsedPredefinedTasks = JSON.parse(savedPredefinedTasks)
+        predefinedTasksTemplate.length = 0
+        predefinedTasksTemplate.push(...parsedPredefinedTasks)
+      } catch (e) {
+        console.error("Failed to parse saved predefined tasks", e)
+      }
+    }
+  }, [])
+
   // Save tasks to localStorage when they change
   useEffect(() => {
     if (tasks.length > 0) {
@@ -648,6 +662,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("zadachi-custom-tasks", JSON.stringify(customTasks))
     }
   }, [customTasks])
+
+  // Save predefined tasks to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem("zadachi-predefined-tasks", JSON.stringify(predefinedTasksTemplate))
+  }, [predefinedTasksTemplate])
 
   const addTask = useCallback((task: Omit<Task, "id">) => {
     const newTask: Task = {
