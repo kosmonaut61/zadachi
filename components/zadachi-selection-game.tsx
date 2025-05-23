@@ -266,26 +266,7 @@ export function ZadachiSelectionGame({
                 </div>
               ))}
 
-              {/* Navigation Buttons for Desktop */}
-              <div className="hidden md:block">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
-                  onClick={goToPrevCard}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
-                  onClick={goToNextCard}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
-              </div>
+              {/* Remove desktop navigation buttons */}
             </div>
           )}
         </div>

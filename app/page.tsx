@@ -1,156 +1,125 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { MoreHorizontal, Plus } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
-import { Navigation } from "@/components/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { useUser } from "@/contexts/user-context"
-import { useTask, categories } from "@/contexts/task-context"
-import { CategoryFilter } from "@/components/category-filter"
-import { ZadachiSelectionGame } from "@/components/zadachi-selection-game"
-import { PointsRedemptionModal } from "@/components/points-redemption-modal"
+import { useTask, type Task } from "@/contexts/task-context"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
+
+// Disable static generation for this page
+export const dynamic = "force-dynamic"
+export const runtime = "edge"
 
 export default function Home() {
-  const [showTaskSelection, setShowTaskSelection] = useState(false)
-  const [showRedemption, setShowRedemption] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { currentUser, updateUser } = useUser()
-  const { tasks, addTask, completeTask, removeTask, getTasksByUserId, getAvailableTasksForUser } = useTask()
+  const { user } = useAuth()
+  const { users, loading: usersLoading } = useUser()
+  const { tasks, loading: tasksLoading, updateTask } = useTask()
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const { toast } = useToast()
 
-  const userTasks = getTasksByUserId(currentUser.id)
-  const filteredTasks = selectedCategory ? userTasks.filter((task) => task.category === selectedCategory) : userTasks
-
-  const availableTasks = getAvailableTasksForUser(currentUser.id)
-  const filteredAvailableTasks = selectedCategory
-    ? availableTasks.filter((task) => task.category === selectedCategory)
-    : availableTasks
-
-  // Debug logging
-  console.log("All available tasks for user:", availableTasks.length)
-  console.log("User tasks:", userTasks.length)
-  console.log("Filtered available tasks:", filteredAvailableTasks.length)
-
-  // Filter out tasks that user already has (prevent stacking)
-  const tasksNotAlreadyAssigned = filteredAvailableTasks.filter(
-    (task) => !userTasks.some((userTask) => userTask.title === task.title && userTask.category === task.category),
-  )
-
-  console.log("Tasks not already assigned:", tasksNotAlreadyAssigned.length)
-
-  const handleAddTask = (taskTemplate: ReturnType<typeof getAvailableTasksForUser>[0]) => {
-    addTask({
-      ...taskTemplate,
-      userId: currentUser.id,
-    })
-    setShowTaskSelection(false)
+  if (usersLoading || tasksLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    )
   }
 
-  const handleCompleteTask = (taskId: string) => {
-    completeTask(taskId)
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Please sign in to view tasks</p>
+      </div>
+    )
   }
 
-  const handleRedeemPoints = (points: number) => {
-    updateUser(currentUser.id, {
-      totalPoints: currentUser.totalPoints - points,
-    })
+  if (users.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Please add family members to view tasks</p>
+      </div>
+    )
+  }
+
+  if (!selectedUserId && users.length > 0) {
+    setSelectedUserId(users[0].id)
+  }
+
+  const selectedUser = users.find(u => u.id === selectedUserId)
+  const userTasks = tasks.filter((t: Task) => t.userId === selectedUserId)
+
+  const handleTaskComplete = async (taskId: string) => {
+    try {
+      await updateTask(taskId, { completed: true })
+      toast({
+        title: "Task completed!",
+        description: "Great job! Keep up the good work.",
+      })
+    } catch (error) {
+      console.error("Error completing task:", error)
+      toast({
+        title: "Error",
+        description: "Failed to complete task. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <div className="min-h-screen flex flex-col pb-20">
-      <Navigation />
-
-      {/* Main Content */}
-      <main className="flex-1 p-4">
-        {/* User Info */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {currentUser.firstName} {currentUser.lastName}
-            </h2>
-            <p className="text-sm text-gray-500">Total Points • {currentUser.totalPoints}</p>
-          </div>
-          <Button variant="outline" onClick={() => setShowRedemption(true)}>
-            Redeem
-          </Button>
-        </div>
-
-        {/* Tasks List */}
-        <div className="space-y-4">
-          {filteredTasks.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="text-lg font-medium mb-2">No Zadachi</h3>
-              <p className="text-sm text-gray-500 max-w-xs mx-auto">
-                {selectedCategory
-                  ? `No ${selectedCategory} zadachi found. Try selecting a different category or add new zadachi.`
-                  : "Use the Create New button in the bottom right hand corner."}
-              </p>
-            </div>
-          ) : (
-            filteredTasks.map((task) => (
-              <Card key={task.id} className="relative">
-                <CardContent className="p-4 flex items-center">
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center mr-3",
-                      categories[task.category].color,
-                    )}
-                  >
-                    <span>{categories[task.category].icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {task.category.charAt(0).toUpperCase() + task.category.slice(1)} • {task.points}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-5 w-5" />
-                        <span className="sr-only">More options</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleCompleteTask(task.id)}>Complete</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => removeTask(task.id)}>Remove</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-
-        {/* Gamified Task Selection */}
-        <ZadachiSelectionGame
-          open={showTaskSelection}
-          onOpenChange={setShowTaskSelection}
-          availableTasks={tasksNotAlreadyAssigned}
-          onSelectTask={handleAddTask}
-          userName={`${currentUser.firstName} ${currentUser.lastName}`}
-        />
-
-        {/* Points Redemption Modal */}
-        <PointsRedemptionModal
-          open={showRedemption}
-          onOpenChange={setShowRedemption}
-          userName={`${currentUser.firstName} ${currentUser.lastName}`}
-          totalPoints={currentUser.totalPoints}
-          onRedeem={handleRedeemPoints}
-        />
-      </main>
-
-      {/* Sticky Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-40">
-        <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
-        <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={() => setShowTaskSelection(true)}>
-          <Plus className="h-6 w-6" />
-          <span className="sr-only">Add new task</span>
-        </Button>
-      </footer>
+    <div className="min-h-screen p-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <Tabs value={selectedUserId || undefined} onValueChange={setSelectedUserId}>
+          <TabsList>
+            {users.map((user) => (
+              <TabsTrigger key={user.id} value={user.id}>
+                {user.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {users.map((user) => (
+            <TabsContent key={user.id} value={user.id}>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{user.name}'s Tasks</CardTitle>
+                    <CardDescription>
+                      {user.points} points earned
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {userTasks.map((task: Task) => (
+                        <Card key={task.id}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium">{task.title}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {task.points} points
+                                </p>
+                              </div>
+                              <Button
+                                variant={task.completed ? "secondary" : "default"}
+                                onClick={() => handleTaskComplete(task.id)}
+                                disabled={task.completed}
+                              >
+                                {task.completed ? "Completed" : "Complete"}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
     </div>
   )
 }

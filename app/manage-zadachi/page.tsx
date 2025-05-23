@@ -7,19 +7,34 @@ import { MoreHorizontal, Plus } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Navigation } from "@/components/navigation"
 import { useUser } from "@/contexts/user-context"
-import { useTask, categories, predefinedTasksTemplate, timeframes } from "@/contexts/task-context"
+import { useTask, categories, predefinedTasksTemplate, timeframes, type Task } from "@/contexts/task-context"
 import { cn } from "@/lib/utils"
 import { ZadachiDrawer } from "@/components/zadachi-drawer"
 import { OptionsMenu, type SortOption, type SortDirection } from "@/components/options-menu"
+import { useAuth } from "@/contexts/auth-context"
+
+// Disable static generation for this page
+export const dynamic = "force-dynamic"
+export const runtime = "edge"
 
 export default function ManageZadachi() {
+  const { user } = useAuth()
   const { users } = useUser()
   const { deleteTask, resetAllTasks } = useTask()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<(typeof predefinedTasksTemplate)[0] | null>(null)
+  const [editingTask, setEditingTask] = useState<Omit<Task, "id" | "userId"> | null>(null)
   const [sortBy, setSortBy] = useState<SortOption>("title")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [refreshKey, setRefreshKey] = useState(0) // Used to force re-render
+
+  // If not authenticated, show a message
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Please sign in to manage tasks</p>
+      </div>
+    )
+  }
 
   // Force a refresh of the task list
   const refreshTaskList = useCallback(() => {
@@ -44,7 +59,7 @@ export default function ManageZadachi() {
           comparison = a.points - b.points
           break
         case "frequency":
-          comparison = a.frequency - b.frequency
+          comparison = Number(a.frequency) - Number(b.frequency)
           break
         case "timeframe":
           // Custom order: daily, weekly, monthly
@@ -64,7 +79,7 @@ export default function ManageZadachi() {
     setIsDrawerOpen(true)
   }
 
-  const handleEditZadachi = (task: (typeof predefinedTasksTemplate)[0]) => {
+  const handleEditZadachi = (task: Omit<Task, "id" | "userId">) => {
     setEditingTask(task)
     setIsDrawerOpen(true)
   }
@@ -104,7 +119,7 @@ export default function ManageZadachi() {
     return allowedUsers
       .map((userId) => {
         const user = users.find((u) => u.id === userId)
-        return user ? user.firstName : ""
+        return user ? user.name : ""
       })
       .filter(Boolean)
       .join(", ")
@@ -139,10 +154,10 @@ export default function ManageZadachi() {
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center mr-3 mt-1",
-                            categories[task.category].color,
+                            categories[task.category as keyof typeof categories].color,
                           )}
                         >
-                          <span>{categories[task.category].icon}</span>
+                          <span>{categories[task.category as keyof typeof categories].icon}</span>
                         </div>
                         <div>
                           <h3 className="font-medium">{task.title}</h3>
@@ -184,20 +199,24 @@ export default function ManageZadachi() {
       {/* Sticky Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-40">
         <OptionsMenu
+          onSortChange={handleSortChange}
           onResetAll={handleResetAll}
           currentSort={sortBy}
           currentDirection={sortDirection}
-          onSortChange={handleSortChange}
           onTasksUploaded={refreshTaskList}
         />
-        <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={handleCreateZadachi}>
-          <Plus className="h-6 w-6" />
-          <span className="sr-only">Add new zadachi</span>
+        <Button onClick={handleCreateZadachi} className="ml-auto">
+          <Plus className="h-5 w-5 mr-2" />
+          Create New
         </Button>
       </footer>
 
-      {/* Zadachi Drawer */}
-      <ZadachiDrawer open={isDrawerOpen} onOpenChange={handleDrawerClose} editingTask={editingTask} />
+      {/* Drawer for creating/editing tasks */}
+      <ZadachiDrawer
+        open={isDrawerOpen}
+        onOpenChange={handleDrawerClose}
+        editingTask={editingTask}
+      />
     </div>
   )
 }

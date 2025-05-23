@@ -2,6 +2,10 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useUser } from "@/contexts/user-context"
+import { useAuth } from "./auth-context"
+import { db } from "@/lib/firebase"
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where, onSnapshot, addDoc, updateDoc } from "firebase/firestore"
+import { useToast } from "@/components/ui/use-toast"
 
 // Define task categories with their icons and colors
 export const categories = {
@@ -38,12 +42,15 @@ export const frequencies = {
 export interface Task {
   id: string
   title: string
-  category: keyof typeof categories
+  category: string
   points: number
   userId: string
-  allowedUsers: string[] // IDs of users who can access this task
-  timeframe: keyof typeof timeframes
-  frequency: keyof typeof frequencies
+  completed: boolean
+  createdAt: Date
+  completedAt?: Date
+  allowedUsers: string[]
+  timeframe: "daily" | "weekly" | "monthly"
+  frequency: number
 }
 
 // Define task usage tracking
@@ -58,52 +65,184 @@ export interface TaskUsage {
 // Predefined tasks template (will be assigned to users when selected)
 export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
   {
+    title: "Clean bedroom",
+    category: "cleaning" as const,
+    points: 10,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Make bed",
+    category: "cleaning" as const,
+    points: 5,
+    allowedUsers: [],
+    timeframe: "daily" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Clean bathroom",
+    category: "cleaning" as const,
+    points: 15,
+    allowedUsers: [],
+    timeframe: "daily" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Draw a picture",
+    category: "creativity" as const,
+    points: 20,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Write a story",
+    category: "creativity" as const,
+    points: 25,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 2,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Clean kitchen",
+    category: "cleaning" as const,
+    points: 15,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 2,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Vacuum living room",
+    category: "cleaning" as const,
+    points: 10,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Paint a picture",
+    category: "creativity" as const,
+    points: 30,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 2,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Clean up toys",
+    category: "home" as const,
+    points: 5,
+    allowedUsers: [],
+    timeframe: "daily" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Do jumping jacks",
+    category: "exercise" as const,
+    points: 15,
+    allowedUsers: [],
+    timeframe: "daily" as const,
+    frequency: 2,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
     title: "Clear your stuff from kitchen table",
-    category: "cleaning",
-    points: 300,
+    category: "cleaning" as const,
+    points: 5,
     allowedUsers: [],
-    timeframe: "weekly",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Pick up all trash in a room",
-    category: "cleaning",
-    points: 450,
+    title: "Clean up your room",
+    category: "cleaning" as const,
+    points: 10,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Sweep / Vaccum kitchen floor",
-    category: "cleaning",
-    points: 750,
+    title: "Clean up your toys",
+    category: "cleaning" as const,
+    points: 5,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Practice guitar for 15 minutes",
-    category: "creativity",
-    points: 120,
+    title: "Create a dance",
+    category: "creativity" as const,
+    points: 20,
     allowedUsers: [],
-    timeframe: "weekly",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Draw something with chalk outside",
-    category: "creativity",
-    points: 60,
+    title: "Make something with clay / dough",
+    category: "creativity" as const,
+    points: 15,
     allowedUsers: [],
-    timeframe: "weekly",
+    timeframe: "weekly" as const,
     frequency: 2,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Put away clean laundry",
-    category: "cleaning",
-    points: 1200,
+    title: "Record a silly video",
+    category: "creativity" as const,
+    points: 25,
     allowedUsers: [],
-    timeframe: "weekly",
+    timeframe: "weekly" as const,
     frequency: 2,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Pick up trash outside",
+    category: "outdoors" as const,
+    points: 15,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  },
+  {
+    title: "Play on trampoline",
+    category: "exercise" as const,
+    points: 10,
+    allowedUsers: [],
+    timeframe: "daily" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
     title: "Pickup 10 things from kids corner",
@@ -112,6 +251,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write or illustrate a story",
@@ -120,6 +260,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Make a healthy snack",
@@ -128,6 +269,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Dance for 10 minutes",
@@ -136,6 +278,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Ride your bike",
@@ -144,6 +287,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do a random act of kindness",
@@ -152,6 +296,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Help prepare a meal",
@@ -160,6 +305,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Brush Teeth",
@@ -168,6 +314,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 2,
+    completed: false
   },
   {
     title: "Clean bathroom sink",
@@ -176,6 +323,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Play a board game",
@@ -184,6 +332,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Watch TV",
@@ -192,6 +341,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Build something with LEGO",
@@ -200,6 +350,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do a puzzle",
@@ -208,6 +359,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write a letter / text to a grandparent",
@@ -216,6 +368,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Wipe down kitchen counters",
@@ -224,6 +377,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Dust a room",
@@ -232,6 +386,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 3,
+    completed: false
   },
   {
     title: "Vacuum a room",
@@ -240,6 +395,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 3,
+    completed: false
   },
   {
     title: "Tidy up shoes",
@@ -248,6 +404,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Put dirty clothes in hamper",
@@ -256,6 +413,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Clean up one room",
@@ -264,6 +422,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Scrub the bathtub",
@@ -272,6 +431,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Wipe down bathroom mirror",
@@ -280,6 +440,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Empty dishwasher",
@@ -288,6 +449,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Clean dining table",
@@ -296,6 +458,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Make a card for someone",
@@ -304,6 +467,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Design a comic strip",
@@ -312,6 +476,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Make something with just paper",
@@ -320,6 +485,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 2,
+    completed: false
   },
   {
     title: "Do an activity box thing",
@@ -328,6 +494,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
+    completed: false
   },
   {
     title: "Build a fort & clean it up",
@@ -336,6 +503,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "weekly",
     frequency: 1,
+    completed: false
   },
   {
     title: "Write a joke",
@@ -344,208 +512,107 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [],
     timeframe: "daily",
     frequency: 1,
-  },
-  {
-    title: "Paint a picture",
-    category: "creativity",
-    points: 360,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Create a dance",
-    category: "creativity",
-    points: 240,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Make something with clay / dough",
-    category: "creativity",
-    points: 240,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Record a silly video",
-    category: "creativity",
-    points: 180,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Pick up trash outside",
-    category: "outdoors",
-    points: 240,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 2,
-  },
-  {
-    title: "Play on trampoline",
-    category: "outdoors",
-    points: 160,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 2,
+    completed: false
   },
   {
     title: "Go swimming",
-    category: "outdoors",
-    points: 320,
+    category: "exercise" as const,
+    points: 20,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Play catch",
-    category: "outdoors",
-    points: 240,
+    title: "Go for a bike ride",
+    category: "exercise" as const,
+    points: 15,
     allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 2,
-  },
-  {
-    title: "Jump rope",
-    category: "outdoors",
-    points: 240,
-    allowedUsers: [],
-    timeframe: "daily",
-    frequency: 2,
-  },
-  {
-    title: "Go for a nature walk",
-    category: "outdoors",
-    points: 400,
-    allowedUsers: [],
-    timeframe: "weekly",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Play basketball",
-    category: "outdoors",
-    points: 160,
+    title: "Do 10 push-ups",
+    category: "exercise" as const,
+    points: 5,
     allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 2,
-  },
-  {
-    title: "Play on rope course",
-    category: "outdoors",
-    points: 320,
-    allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Ride a scooter / skateboard / skates",
-    category: "outdoors",
-    points: 320,
+    title: "Do 20 jumping jacks",
+    category: "exercise" as const,
+    points: 5,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Water flowers",
-    category: "exercise",
-    points: 270,
+    title: "Do 10 sit-ups",
+    category: "exercise" as const,
+    points: 5,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
-  },
-  {
-    title: "Do 10 jumping jacks",
-    category: "exercise",
-    points: 180,
-    allowedUsers: [],
-    timeframe: "daily",
-    frequency: 1,
-  },
-  {
-    title: "Stretch for 5 minutes",
-    category: "exercise",
-    points: 180,
-    allowedUsers: [],
-    timeframe: "daily",
-    frequency: 1,
-  },
-  {
-    title: "Hula hoop",
-    category: "exercise",
-    points: 270,
-    allowedUsers: [],
-    timeframe: "daily",
-    frequency: 1,
-  },
-  {
-    title: "Balance on one foot",
-    category: "exercise",
-    points: 180,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Do a yoga pose",
-    category: "exercise",
-    points: 180,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
-  },
-  {
-    title: "Do an exercise routine",
-    category: "exercise",
-    points: 360,
-    allowedUsers: [],
-    timeframe: "daily",
-    frequency: 1,
-  },
-  {
-    title: "Play tag",
-    category: "exercise",
-    points: 360,
-    allowedUsers: [],
-    timeframe: "weekly",
-    frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
     title: "Go for a walk",
-    category: "exercise",
-    points: 360,
+    category: "exercise" as const,
+    points: 10,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Pushups",
-    category: "exercise",
-    points: 180,
+    title: "Play catch",
+    category: "exercise" as const,
+    points: 10,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "daily" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
   {
-    title: "Treadmill for 15 minutes",
-    category: "exercise",
-    points: 300,
+    title: "Play basketball",
+    category: "exercise" as const,
+    points: 15,
     allowedUsers: [],
-    timeframe: "daily",
+    timeframe: "weekly" as const,
     frequency: 1,
+    completed: false,
+    createdAt: new Date()
   },
+  {
+    title: "Play soccer",
+    category: "exercise" as const,
+    points: 15,
+    allowedUsers: [],
+    timeframe: "weekly" as const,
+    frequency: 1,
+    completed: false,
+    createdAt: new Date()
+  }
 ]
 
 // Add a new resetAllTasks function to the TaskContextType interface
 interface TaskContextType {
   tasks: Task[]
   taskUsage: TaskUsage[]
-  addTask: (task: Omit<Task, "id">) => void
+  addTask: (task: Omit<Task, "id" | "userId" | "createdAt" | "completed">) => Promise<void>
   completeTask: (taskId: string) => number
-  removeTask: (taskId: string) => void
+  removeTask: (taskId: string) => Promise<void>
   getTasksByUserId: (userId: string) => Task[]
   getAvailableTasksForUser: (userId: string) => Omit<Task, "id" | "userId">[]
   createCustomTask: (
@@ -556,12 +623,13 @@ interface TaskContextType {
     timeframe: keyof typeof timeframes,
     frequency: keyof typeof frequencies,
   ) => void
-  updateTask: (taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => void
-  deleteTask: (taskId: string) => void
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>
+  deleteTask: (id: string) => Promise<void>
   resetTaskUsage: () => void
-  resetAllTasks: () => void
+  resetAllTasks: () => Promise<void>
   removeAllAssignedTasks: () => void
   clearAllZadachiTemplates: () => void
+  loading: boolean
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -576,18 +644,48 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [taskUsage, setTaskUsage] = useState<TaskUsage[]>([])
   const [customTasks, setCustomTasks] = useState<Omit<Task, "id" | "userId">[]>([])
   const { updateUserPoints, users } = useUser()
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-  // Load tasks from localStorage on mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem("zadachi-tasks")
-    if (savedTasks) {
-      try {
-        setTasks(JSON.parse(savedTasks))
-      } catch (e) {
-        console.error("Failed to parse saved tasks", e)
-      }
+    if (!user) {
+      setTasks([])
+      setLoading(false)
+      return
     }
-  }, [])
+
+    setLoading(true)
+    const tasksQuery = query(
+      collection(db, "tasks"),
+      where("userId", "==", user.uid)
+    )
+
+    const unsubscribe = onSnapshot(
+      tasksQuery,
+      (snapshot) => {
+        const tasksData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate(),
+          completedAt: doc.data().completedAt?.toDate(),
+        })) as Task[]
+        setTasks(tasksData)
+        setLoading(false)
+      },
+      (error) => {
+        console.error("Error fetching tasks:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch tasks. Please try again.",
+          variant: "destructive",
+        })
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [user, toast])
 
   // Load task usage from localStorage on mount
   useEffect(() => {
@@ -628,6 +726,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Load predefined tasks from localStorage on mount
+  useEffect(() => {
+    const savedPredefinedTasks = localStorage.getItem("zadachi-predefined-tasks")
+    if (savedPredefinedTasks) {
+      try {
+        const parsedPredefinedTasks = JSON.parse(savedPredefinedTasks)
+        predefinedTasksTemplate.length = 0
+        predefinedTasksTemplate.push(...parsedPredefinedTasks)
+      } catch (e) {
+        console.error("Failed to parse saved predefined tasks", e)
+      }
+    }
+  }, [])
+
   // Save tasks to localStorage when they change
   useEffect(() => {
     if (tasks.length > 0) {
@@ -649,46 +761,42 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [customTasks])
 
-  const addTask = useCallback((task: Omit<Task, "id">) => {
-    const newTask: Task = {
-      ...task,
-      id: `task-${Date.now()}`,
+  // Save predefined tasks to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem("zadachi-predefined-tasks", JSON.stringify(predefinedTasksTemplate))
+  }, [predefinedTasksTemplate])
+
+  const addTask = async (task: Omit<Task, "id" | "userId" | "createdAt" | "completed">) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be signed in to add tasks",
+        variant: "destructive",
+      })
+      return
     }
-    setTasks((prevTasks) => [...prevTasks, newTask])
 
-    // Update task usage
-    const taskTemplateId = getTaskTemplateId(task.title, task.category)
-    const now = new Date()
-
-    setTaskUsage((prevUsage) => {
-      // Check if we already have usage for this task and user
-      const existingUsageIndex = prevUsage.findIndex((u) => u.taskId === taskTemplateId && u.userId === task.userId)
-
-      if (existingUsageIndex >= 0) {
-        // Update existing usage
-        const updatedUsage = [...prevUsage]
-        updatedUsage[existingUsageIndex] = {
-          ...updatedUsage[existingUsageIndex],
-          lastUsedDate: now.toISOString(),
-          usageCount: updatedUsage[existingUsageIndex].usageCount + 1,
-          timeframe: task.timeframe, // Update timeframe in case it changed
-        }
-        return updatedUsage
-      } else {
-        // Add new usage
-        return [
-          ...prevUsage,
-          {
-            taskId: taskTemplateId,
-            userId: task.userId,
-            lastUsedDate: now.toISOString(),
-            usageCount: 1,
-            timeframe: task.timeframe,
-          },
-        ]
-      }
-    })
-  }, [])
+    try {
+      await addDoc(collection(db, "tasks"), {
+        ...task,
+        userId: user.uid,
+        completed: false,
+        createdAt: new Date(),
+      })
+      toast({
+        title: "Success",
+        description: "Task added successfully",
+      })
+    } catch (error) {
+      console.error("Error adding task:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add task. Please try again.",
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
 
   const completeTask = useCallback(
     (taskId: string) => {
@@ -706,9 +814,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [tasks, updateUserPoints],
   )
 
-  const removeTask = useCallback((taskId: string) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
-  }, [])
+  const removeTask = async (taskId: string) => {
+    if (!user) return
+
+    try {
+      await deleteDoc(doc(db, "tasks", taskId))
+      setTasks(prev => prev.filter(task => task.id !== taskId))
+    } catch (error) {
+      console.error("Error removing task:", error)
+      throw error
+    }
+  }
 
   const getTasksByUserId = useCallback(
     (userId: string) => {
@@ -725,15 +841,43 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Add the resetAllTasks implementation in the TaskProvider
   // Add this function after the resetTaskUsage function
-  const resetAllTasks = useCallback(() => {
-    // Clear all tasks
-    setTasks([])
-    localStorage.removeItem("zadachi-tasks")
+  const resetAllTasks = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be signed in to reset tasks",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // Clear all task usage
-    setTaskUsage([])
-    localStorage.removeItem("zadachi-task-usage")
-  }, [])
+    try {
+      const tasksQuery = query(
+        collection(db, "tasks"),
+        where("userId", "==", user.uid)
+      )
+      const snapshot = await getDocs(tasksQuery)
+      const batch = db.batch()
+      
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, { completed: false, completedAt: null })
+      })
+      
+      await batch.commit()
+      toast({
+        title: "Success",
+        description: "All tasks have been reset",
+      })
+    } catch (error) {
+      console.error("Error resetting tasks:", error)
+      toast({
+        title: "Error",
+        description: "Failed to reset tasks. Please try again.",
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
 
   // Remove all assigned tasks but keep usage counts
   const removeAllAssignedTasks = useCallback(() => {
@@ -749,6 +893,49 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Clear custom tasks
     setCustomTasks([])
     localStorage.removeItem("zadachi-custom-tasks")
+  }, [])
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be signed in to update tasks",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const taskRef = doc(db, "tasks", id)
+      await updateDoc(taskRef, {
+        ...updates,
+        completedAt: updates.completed ? new Date() : null,
+      })
+      toast({
+        title: "Success",
+        description: "Task updated successfully",
+      })
+    } catch (error) {
+      console.error("Error updating task:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update task. Please try again.",
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
+
+  const updateTaskUsage = useCallback((taskId: string, usage: Omit<TaskUsage, "taskId">) => {
+    setTaskUsage((prevUsage: TaskUsage[]) => {
+      const existingUsage = prevUsage.find((u: TaskUsage) => u.taskId === taskId)
+      if (existingUsage) {
+        return prevUsage.map((u: TaskUsage) =>
+          u.taskId === taskId ? { ...u, ...usage } : u
+        )
+      }
+      return [...prevUsage, { taskId, ...usage }]
+    })
   }, [])
 
   // Get available tasks for a user based on timeframe and frequency
@@ -838,6 +1025,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         allowedUsers,
         timeframe,
         frequency,
+        completed: false
       }
 
       // Check if task already exists
@@ -869,40 +1057,32 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const updateTask = useCallback((taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
-          return { ...task, ...updates }
-        }
-        return task
-      }),
-    )
-  }, [])
+  const deleteTask = async (id: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be signed in to delete tasks",
+        variant: "destructive",
+      })
+      return
+    }
 
-  const deleteTask = useCallback(
-    (taskId: string) => {
-      // Remove from predefined tasks if it exists
-      const taskToDelete = tasks.find((t) => t.id === taskId)
-      if (taskToDelete) {
-        const index = predefinedTasksTemplate.findIndex(
-          (t) => t.title === taskToDelete.title && t.category === taskToDelete.category,
-        )
-        if (index !== -1) {
-          predefinedTasksTemplate.splice(index, 1)
-
-          // Also remove from custom tasks
-          setCustomTasks((prevCustomTasks) =>
-            prevCustomTasks.filter((t) => !(t.title === taskToDelete.title && t.category === taskToDelete.category)),
-          )
-        }
-      }
-
-      // Remove from tasks
-      setTasks((prevTasks) => prevTasks.filter((t) => t.id !== taskId))
-    },
-    [tasks],
-  )
+    try {
+      await deleteDoc(doc(db, "tasks", id))
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      })
+    } catch (error) {
+      console.error("Error deleting task:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
 
   // Update the context provider value to include the new function
   return (
@@ -922,6 +1102,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         resetAllTasks,
         removeAllAssignedTasks,
         clearAllZadachiTemplates,
+        loading,
       }}
     >
       {children}

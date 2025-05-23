@@ -6,30 +6,34 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { UserProvider } from "@/contexts/user-context"
 import { TaskProvider } from "@/contexts/task-context"
 import { Toaster } from "@/components/toaster"
+import { AuthProvider } from "@/contexts/auth-context"
+import { Nav } from "@/components/nav"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Zadachi - Gamified Task Management",
-  description: "Complete tasks, earn points, and have fun with Zadachi",
-    generator: 'v0.dev'
+  title: "Zadachi",
+  description: "Family task management and rewards system",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <UserProvider>
-            <TaskProvider>
-              {children}
-              <Toaster />
-            </TaskProvider>
-          </UserProvider>
+          <AuthProvider>
+            <UserProvider>
+              <TaskProvider>
+                <Nav />
+                {children}
+                <Toaster />
+              </TaskProvider>
+            </UserProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
