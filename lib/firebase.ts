@@ -1,7 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, enableNetwork } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, enableNetwork, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHQVcTqdAU3MiZqjNWVm9_0YM-pfGuN_E",
@@ -46,7 +46,12 @@ if (typeof window !== 'undefined') {
 
 console.log("[Firebase] Initializing auth and Firestore");
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialize Firestore with custom settings
+const db = initializeFirestore(app, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  experimentalForceLongPolling: true
+});
 
 // Enable offline persistence and handle connection issues
 if (typeof window !== 'undefined') {

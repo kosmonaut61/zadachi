@@ -28,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
@@ -39,15 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user)
       setLoading(false)
       
-      // Only redirect if necessary
-      if (user && pathname === "/login") {
-        console.log("[Auth] User is signed in, redirecting to home")
-        router.push("/")
-      } else if (!user && pathname !== "/login") {
-        console.log("[Auth] No user, redirecting to login")
-        router.push("/login")
-      } else {
-        console.log("[Auth] No redirect needed, current path:", pathname)
+      // Only redirect if necessary and not already navigating
+      if (!isNavigating) {
+        if (user && pathname === "/login") {
+          console.log("[Auth] User is signed in, redirecting to home")
+          setIsNavigating(true)
+          router.push("/")
+        } else if (!user && pathname !== "/login") {
+          console.log("[Auth] No user, redirecting to login")
+          setIsNavigating(true)
+          router.push("/login")
+        } else {
+          console.log("[Auth] No redirect needed, current path:", pathname)
+        }
       }
     })
 
@@ -55,11 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[Auth] Cleaning up auth state listener")
       unsubscribe()
     }
+  }, [pathname, isNavigating])
+
+  // Reset navigation state when pathname changes
+  useEffect(() => {
+    setIsNavigating(false)
   }, [pathname])
 
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      setIsNavigating(true)
       router.push("/")
     } catch (error: any) {
       console.error("Error signing in:", error)
@@ -75,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
+      setIsNavigating(true)
       router.push("/")
     } catch (error: any) {
       console.error("Error signing up:", error)
@@ -96,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed in with Google",
       })
+      setIsNavigating(true)
       router.push("/")
     } catch (error: any) {
       console.error("[Auth] Sign in error:", error)
@@ -125,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success",
         description: "Successfully signed out",
       })
+      setIsNavigating(true)
       router.push("/login")
     } catch (error: any) {
       console.error("[Auth] Sign out error:", error)
