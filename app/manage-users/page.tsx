@@ -40,7 +40,7 @@ export default function ManageUsers() {
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
 
       {/* Main Content */}
@@ -90,8 +90,8 @@ export default function ManageUsers() {
         </div>
       </main>
 
-      {/* Footer with Add Button */}
-      <footer className="p-4 flex justify-between items-center border-t">
+      {/* Sticky Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-40">
         <Button variant="outline" className="flex items-center gap-1">
           All Users
           <svg

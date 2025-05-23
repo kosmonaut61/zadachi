@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MoreHorizontal, Plus } from "lucide-react"
@@ -10,17 +10,54 @@ import { useUser } from "@/contexts/user-context"
 import { useTask, categories, predefinedTasksTemplate, timeframes } from "@/contexts/task-context"
 import { cn } from "@/lib/utils"
 import { ZadachiDrawer } from "@/components/zadachi-drawer"
-// Import the ConfirmationDialog component
-import { ConfirmationDialog } from "@/components/confirmation-dialog"
-import { Trash2 } from "lucide-react"
+import { OptionsMenu, type SortOption, type SortDirection } from "@/components/options-menu"
 
 export default function ManageZadachi() {
   const { users } = useUser()
   const { deleteTask, resetAllTasks } = useTask()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<(typeof predefinedTasksTemplate)[0] | null>(null)
-  // Add state for the confirmation dialog
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>("title")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [refreshKey, setRefreshKey] = useState(0) // Used to force re-render
+
+  // Force a refresh of the task list
+  const refreshTaskList = useCallback(() => {
+    setRefreshKey((prev) => prev + 1)
+  }, [])
+
+  // Sort the tasks based on current sort settings
+  const sortedTasks = useMemo(() => {
+    const tasksToSort = [...predefinedTasksTemplate]
+
+    return tasksToSort.sort((a, b) => {
+      let comparison = 0
+
+      switch (sortBy) {
+        case "title":
+          comparison = a.title.localeCompare(b.title)
+          break
+        case "category":
+          comparison = a.category.localeCompare(b.category)
+          break
+        case "points":
+          comparison = a.points - b.points
+          break
+        case "frequency":
+          comparison = a.frequency - b.frequency
+          break
+        case "timeframe":
+          // Custom order: daily, weekly, monthly
+          const timeframeOrder = { daily: 1, weekly: 2, monthly: 3 }
+          comparison = timeframeOrder[a.timeframe] - timeframeOrder[b.timeframe]
+          break
+        default:
+          comparison = 0
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison
+    })
+  }, [sortBy, sortDirection, refreshKey]) // Add refreshKey to dependencies
 
   const handleCreateZadachi = () => {
     setEditingTask(null)
@@ -33,17 +70,31 @@ export default function ManageZadachi() {
   }
 
   const handleDeleteZadachi = (taskIndex: number) => {
-    // Remove from predefined tasks
-    predefinedTasksTemplate.splice(taskIndex, 1)
-    // Force re-render
-    window.location.reload()
+    // Find the original index in predefinedTasksTemplate
+    const taskToDelete = sortedTasks[taskIndex]
+    const originalIndex = predefinedTasksTemplate.findIndex(
+      (t) => t.title === taskToDelete.title && t.category === taskToDelete.category,
+    )
+
+    if (originalIndex !== -1) {
+      // Remove from predefined tasks
+      predefinedTasksTemplate.splice(originalIndex, 1)
+      // Force re-render
+      refreshTaskList()
+    }
   }
 
   const handleDrawerClose = (open: boolean) => {
     setIsDrawerOpen(open)
     if (!open) {
       setEditingTask(null)
+      refreshTaskList() // Refresh when drawer closes (in case a task was added/edited)
     }
+  }
+
+  const handleSortChange = (sort: SortOption, direction: SortDirection) => {
+    setSortBy(sort)
+    setSortDirection(direction)
   }
 
   // Helper function to display user access
@@ -59,30 +110,29 @@ export default function ManageZadachi() {
       .join(", ")
   }
 
-  // Add a reset function
-  const handleReset = () => {
+  const handleResetAll = () => {
     resetAllTasks()
-    setIsResetDialogOpen(false)
+    refreshTaskList()
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
 
       {/* Main Content */}
       <main className="flex-1 p-4">
         <div className="space-y-4">
-          {predefinedTasksTemplate.length === 0 ? (
+          {sortedTasks.length === 0 ? (
             <div className="text-center py-12">
               <h3 className="text-lg font-medium mb-2">No Zadachi</h3>
               <p className="text-sm text-gray-500 max-w-xs mx-auto">
-                Use the Create New button in the bottom right hand corner.
+                Use the Create New button in the bottom right hand corner or upload zadachi via CSV.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {predefinedTasksTemplate.map((task, index) => (
-                <Card key={index}>
+              {sortedTasks.map((task, index) => (
+                <Card key={`${task.title}-${task.category}-${index}-${refreshKey}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start">
@@ -131,32 +181,20 @@ export default function ManageZadachi() {
         </div>
       </main>
 
-      {/* Footer with Reset Button and Add Button */}
-      <footer className="p-4 flex justify-between items-center border-t">
-        <Button
-          variant="outline"
-          className="flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
-          onClick={() => setIsResetDialogOpen(true)}
-        >
-          <Trash2 className="h-4 w-4" />
-          Reset All Zadachi
-        </Button>
+      {/* Sticky Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-40">
+        <OptionsMenu
+          onResetAll={handleResetAll}
+          currentSort={sortBy}
+          currentDirection={sortDirection}
+          onSortChange={handleSortChange}
+          onTasksUploaded={refreshTaskList}
+        />
         <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={handleCreateZadachi}>
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add new zadachi</span>
         </Button>
       </footer>
-
-      {/* Reset Confirmation Dialog */}
-      <ConfirmationDialog
-        open={isResetDialogOpen}
-        onOpenChange={setIsResetDialogOpen}
-        title="Reset All Zadachi"
-        description="This will remove all assigned zadachi and reset all usage counts. This action cannot be undone."
-        confirmText="Reset"
-        cancelText="Cancel"
-        onConfirm={handleReset}
-      />
 
       {/* Zadachi Drawer */}
       <ZadachiDrawer open={isDrawerOpen} onOpenChange={handleDrawerClose} editingTask={editingTask} />

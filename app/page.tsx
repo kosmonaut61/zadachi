@@ -10,6 +10,7 @@ import { Navigation } from "@/components/navigation"
 import { useUser } from "@/contexts/user-context"
 import { useTask, categories } from "@/contexts/task-context"
 import { CategoryFilter } from "@/components/category-filter"
+import { ZadachiSelectionGame } from "@/components/zadachi-selection-game"
 
 export default function Home() {
   const [showTaskSelection, setShowTaskSelection] = useState(false)
@@ -38,7 +39,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
 
       {/* Main Content */}
@@ -101,51 +102,21 @@ export default function Home() {
           )}
         </div>
 
-        {/* Task Selection Modal */}
-        {showTaskSelection && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-md w-full">
-              <h3 className="text-lg font-medium mb-4">Select a Zadachi</h3>
-              {filteredAvailableTasks.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">
-                  No available zadachi at the moment. Check back later or create new ones.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {filteredAvailableTasks.map((task, index) => (
-                    <Card
-                      key={index}
-                      className={cn(
-                        "cursor-pointer transform transition-transform hover:scale-105",
-                        categories[task.category].color,
-                      )}
-                      onClick={() => handleAddTask(task)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center mb-2">
-                          <span className="mr-2">{categories[task.category].icon}</span>
-                          <span className="text-sm">
-                            {task.category.charAt(0).toUpperCase() + task.category.slice(1)} • {task.points}
-                          </span>
-                        </div>
-                        <p className="font-medium">{task.title}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-              <div className="mt-4 flex justify-end">
-                <Button variant="outline" onClick={() => setShowTaskSelection(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Gamified Task Selection */}
+        <ZadachiSelectionGame
+          open={showTaskSelection}
+          onOpenChange={setShowTaskSelection}
+          availableTasks={filteredAvailableTasks.filter(
+            (task) =>
+              !userTasks.some((userTask) => userTask.title === task.title && userTask.category === task.category),
+          )}
+          onSelectTask={handleAddTask}
+          userName={`${currentUser.firstName} ${currentUser.lastName}`}
+        />
       </main>
 
-      {/* Footer with Category Filter and Add Button */}
-      <footer className="p-4 flex justify-between items-center border-t">
+      {/* Sticky Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-40">
         <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
         <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={() => setShowTaskSelection(true)}>
           <Plus className="h-6 w-6" />

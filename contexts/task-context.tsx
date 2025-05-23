@@ -103,6 +103,8 @@ interface TaskContextType {
   deleteTask: (taskId: string) => void
   resetTaskUsage: () => void
   resetAllTasks: () => void
+  removeAllAssignedTasks: () => void
+  clearAllZadachiTemplates: () => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -276,6 +278,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("zadachi-task-usage")
   }, [])
 
+  // Remove all assigned tasks but keep usage counts
+  const removeAllAssignedTasks = useCallback(() => {
+    setTasks([])
+    localStorage.removeItem("zadachi-tasks")
+  }, [])
+
+  // Clear all zadachi templates (predefined tasks)
+  const clearAllZadachiTemplates = useCallback(() => {
+    // Clear predefined tasks
+    predefinedTasksTemplate.length = 0
+
+    // Clear custom tasks
+    setCustomTasks([])
+    localStorage.removeItem("zadachi-custom-tasks")
+  }, [])
+
   // Get available tasks for a user based on timeframe and frequency
   const getAvailableTasksForUser = useCallback(
     (userId: string) => {
@@ -426,6 +444,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         deleteTask,
         resetTaskUsage,
         resetAllTasks,
+        removeAllAssignedTasks,
+        clearAllZadachiTemplates,
       }}
     >
       {children}
