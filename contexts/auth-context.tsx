@@ -12,6 +12,7 @@ import {
 } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
   user: User | null
@@ -28,22 +29,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
+      if (user) {
+        // User is signed in
+        router.push("/")
+      } else {
+        // User is signed out
+        router.push("/login")
+      }
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [router])
 
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      router.push("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign in",
+        variant: "destructive",
+      })
       throw error
     }
   }
@@ -51,9 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password)
-      router.push("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing up:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      })
       throw error
     }
   }
@@ -62,12 +79,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await signInWithPopup(auth, googleProvider)
       if (result.user) {
-        router.push("/")
+        toast({
+          title: "Success",
+          description: "Successfully signed in with Google",
+        })
       }
     } catch (error: any) {
       console.error("Error signing in with Google:", error)
       if (error.code === 'auth/popup-closed-by-user') {
-        throw new Error('Sign-in was cancelled')
+        toast({
+          title: "Sign in cancelled",
+          description: "You closed the sign-in window",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to sign in with Google",
+          variant: "destructive",
+        })
       }
       throw error
     }
@@ -76,9 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth)
-      router.push("/")
-    } catch (error) {
+      toast({
+        title: "Success",
+        description: "Successfully signed out",
+      })
+    } catch (error: any) {
       console.error("Error signing out:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign out",
+        variant: "destructive",
+      })
       throw error
     }
   }
