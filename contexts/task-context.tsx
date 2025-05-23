@@ -5,9 +5,16 @@ import { useUser } from "@/contexts/user-context"
 
 // Define task categories with their icons and colors
 export const categories = {
-  cleaning: { icon: "🧹", color: "bg-yellow-100" },
+  exercise: { icon: "🔥", color: "bg-orange-100" },
+  water: { icon: "💧", color: "bg-blue-100" },
+  cleaning: { icon: "🧹", color: "bg-green-100" },
+  home: { icon: "🏠", color: "bg-red-100" },
+  family: { icon: "💖", color: "bg-pink-100" },
+  creativity: { icon: "⭐", color: "bg-yellow-100" },
+  meditation: { icon: "👁️", color: "bg-purple-100" },
+  general: { icon: "💎", color: "bg-gray-100" },
+  chill: { icon: "❄️", color: "bg-teal-100" },
   outdoors: { icon: "🌿", color: "bg-green-100" },
-  creativity: { icon: "🎨", color: "bg-amber-100" },
 }
 
 // Define timeframe options
@@ -75,6 +82,7 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
   },
 ]
 
+// Add a new resetAllTasks function to the TaskContextType interface
 interface TaskContextType {
   tasks: Task[]
   taskUsage: TaskUsage[]
@@ -94,6 +102,7 @@ interface TaskContextType {
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => void
   deleteTask: (taskId: string) => void
   resetTaskUsage: () => void
+  resetAllTasks: () => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -255,6 +264,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("zadachi-task-usage")
   }, [])
 
+  // Add the resetAllTasks implementation in the TaskProvider
+  // Add this function after the resetTaskUsage function
+  const resetAllTasks = useCallback(() => {
+    // Clear all tasks
+    setTasks([])
+    localStorage.removeItem("zadachi-tasks")
+
+    // Clear all task usage
+    setTaskUsage([])
+    localStorage.removeItem("zadachi-task-usage")
+  }, [])
+
   // Get available tasks for a user based on timeframe and frequency
   const getAvailableTasksForUser = useCallback(
     (userId: string) => {
@@ -389,6 +410,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [tasks],
   )
 
+  // Update the context provider value to include the new function
   return (
     <TaskContext.Provider
       value={{
@@ -403,6 +425,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         updateTask,
         deleteTask,
         resetTaskUsage,
+        resetAllTasks,
       }}
     >
       {children}

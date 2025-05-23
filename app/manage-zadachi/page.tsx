@@ -10,12 +10,17 @@ import { useUser } from "@/contexts/user-context"
 import { useTask, categories, predefinedTasksTemplate, timeframes } from "@/contexts/task-context"
 import { cn } from "@/lib/utils"
 import { ZadachiDrawer } from "@/components/zadachi-drawer"
+// Import the ConfirmationDialog component
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { Trash2 } from "lucide-react"
 
 export default function ManageZadachi() {
   const { users } = useUser()
-  const { deleteTask } = useTask()
+  const { deleteTask, resetAllTasks } = useTask()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<(typeof predefinedTasksTemplate)[0] | null>(null)
+  // Add state for the confirmation dialog
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
 
   const handleCreateZadachi = () => {
     setEditingTask(null)
@@ -52,6 +57,12 @@ export default function ManageZadachi() {
       })
       .filter(Boolean)
       .join(", ")
+  }
+
+  // Add a reset function
+  const handleReset = () => {
+    resetAllTasks()
+    setIsResetDialogOpen(false)
   }
 
   return (
@@ -120,30 +131,32 @@ export default function ManageZadachi() {
         </div>
       </main>
 
-      {/* Footer with Add Button */}
+      {/* Footer with Reset Button and Add Button */}
       <footer className="p-4 flex justify-between items-center border-t">
-        <Button variant="outline" className="flex items-center gap-1">
-          All Zadachi
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-chevron-up"
-          >
-            <path d="m18 15-6-6-6 6" />
-          </svg>
+        <Button
+          variant="outline"
+          className="flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+          onClick={() => setIsResetDialogOpen(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Reset All Zadachi
         </Button>
         <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={handleCreateZadachi}>
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add new zadachi</span>
         </Button>
       </footer>
+
+      {/* Reset Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isResetDialogOpen}
+        onOpenChange={setIsResetDialogOpen}
+        title="Reset All Zadachi"
+        description="This will remove all assigned zadachi and reset all usage counts. This action cannot be undone."
+        confirmText="Reset"
+        cancelText="Cancel"
+        onConfirm={handleReset}
+      />
 
       {/* Zadachi Drawer */}
       <ZadachiDrawer open={isDrawerOpen} onOpenChange={handleDrawerClose} editingTask={editingTask} />

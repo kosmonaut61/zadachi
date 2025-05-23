@@ -9,14 +9,21 @@ import { cn } from "@/lib/utils"
 import { Navigation } from "@/components/navigation"
 import { useUser } from "@/contexts/user-context"
 import { useTask, categories } from "@/contexts/task-context"
+import { CategoryFilter } from "@/components/category-filter"
 
 export default function Home() {
   const [showTaskSelection, setShowTaskSelection] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const { currentUser } = useUser()
   const { tasks, addTask, completeTask, removeTask, getTasksByUserId, getAvailableTasksForUser } = useTask()
 
   const userTasks = getTasksByUserId(currentUser.id)
+  const filteredTasks = selectedCategory ? userTasks.filter((task) => task.category === selectedCategory) : userTasks
+
   const availableTasks = getAvailableTasksForUser(currentUser.id)
+  const filteredAvailableTasks = selectedCategory
+    ? availableTasks.filter((task) => task.category === selectedCategory)
+    : availableTasks
 
   const handleAddTask = (taskTemplate: ReturnType<typeof getAvailableTasksForUser>[0]) => {
     addTask({
@@ -49,15 +56,17 @@ export default function Home() {
 
         {/* Tasks List */}
         <div className="space-y-4">
-          {userTasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <h3 className="text-lg font-medium mb-2">No Zadachi</h3>
               <p className="text-sm text-gray-500 max-w-xs mx-auto">
-                Use the Create New button in the bottom right hand corner.
+                {selectedCategory
+                  ? `No ${selectedCategory} zadachi found. Try selecting a different category or add new zadachi.`
+                  : "Use the Create New button in the bottom right hand corner."}
               </p>
             </div>
           ) : (
-            userTasks.map((task) => (
+            filteredTasks.map((task) => (
               <Card key={task.id} className="relative">
                 <CardContent className="p-4 flex items-center">
                   <div
@@ -97,13 +106,13 @@ export default function Home() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg max-w-md w-full">
               <h3 className="text-lg font-medium mb-4">Select a Zadachi</h3>
-              {availableTasks.length === 0 ? (
+              {filteredAvailableTasks.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">
                   No available zadachi at the moment. Check back later or create new ones.
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {availableTasks.map((task, index) => (
+                  {filteredAvailableTasks.map((task, index) => (
                     <Card
                       key={index}
                       className={cn(
@@ -135,25 +144,9 @@ export default function Home() {
         )}
       </main>
 
-      {/* Footer with Add Button */}
+      {/* Footer with Category Filter and Add Button */}
       <footer className="p-4 flex justify-between items-center border-t">
-        <Button variant="outline" className="flex items-center gap-1">
-          All Zadachi
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-chevron-up"
-          >
-            <path d="m18 15-6-6-6 6" />
-          </svg>
-        </Button>
+        <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
         <Button size="icon" className="rounded-full h-12 w-12 shadow-lg" onClick={() => setShowTaskSelection(true)}>
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add new task</span>
