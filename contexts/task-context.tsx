@@ -751,6 +751,46 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("zadachi-custom-tasks")
   }, [])
 
+  const updateTask = useCallback((taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => {
+    // Update in tasks array
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              ...updates,
+            }
+          : task
+      )
+    )
+
+    // Update in predefined tasks template if it exists there
+    const taskToUpdate = tasks.find((t) => t.id === taskId)
+    if (taskToUpdate) {
+      const index = predefinedTasksTemplate.findIndex(
+        (t) => t.title === taskToUpdate.title && t.category === taskToUpdate.category
+      )
+      if (index !== -1) {
+        predefinedTasksTemplate[index] = {
+          ...predefinedTasksTemplate[index],
+          ...updates,
+        }
+
+        // Also update in custom tasks if it exists there
+        setCustomTasks((prevCustomTasks) =>
+          prevCustomTasks.map((task) =>
+            task.title === taskToUpdate.title && task.category === taskToUpdate.category
+              ? {
+                  ...task,
+                  ...updates,
+                }
+              : task
+          )
+        )
+      }
+    }
+  }, [tasks])
+
   // Get available tasks for a user based on timeframe and frequency
   const getAvailableTasksForUser = useCallback(
     (userId: string) => {
@@ -868,17 +908,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
-
-  const updateTask = useCallback((taskId: string, updates: Partial<Omit<Task, "id" | "userId">>) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
-          return { ...task, ...updates }
-        }
-        return task
-      }),
-    )
-  }, [])
 
   const deleteTask = useCallback(
     (taskId: string) => {
