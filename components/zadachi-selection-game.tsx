@@ -232,21 +232,26 @@ export function ZadachiSelectionGame({
                     isAnimating && index === currentCardIndex && "transition-none",
                   )}
                 >
-                  <Card className={cn("w-full h-full border-2 shadow-xl", categories[task.category].color)}>
-                    <CardContent className="p-6 h-full flex flex-col">
-                      {/* Category Icon */}
-                      <div className="flex justify-center mb-4">
-                        <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-white shadow-md">
-                          {categories[task.category].icon}
+                  <Card
+                    className={cn("w-full h-full border-2 shadow-xl overflow-hidden", categories[task.category].color)}
+                  >
+                    <CardContent className="p-6 h-full flex flex-col justify-between bg-white">
+                      {/* Top Section */}
+                      <div className="text-center">
+                        {/* Category Icon */}
+                        <div className="flex justify-center mb-4">
+                          <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-white shadow-md">
+                            {categories[task.category].icon}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Category & Points */}
-                      <div className="text-center mb-4">
-                        <div className="text-xl font-semibold text-gray-800">
-                          {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                        {/* Category & Points */}
+                        <div className="mb-4">
+                          <div className="text-xl font-semibold text-gray-800">
+                            {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                          </div>
+                          <div className="text-3xl font-bold text-gray-900">+{task.points}</div>
                         </div>
-                        <div className="text-3xl font-bold text-gray-900">+{task.points}</div>
                       </div>
 
                       {/* Divider */}
