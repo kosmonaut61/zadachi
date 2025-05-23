@@ -3,12 +3,15 @@
 import { useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useUser } from "@/contexts/user-context"
-import { useTask } from "@/contexts/task-context-new"
+import { useTask, type Task } from "@/contexts/task-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import type { Task } from "@/contexts/task-context-new"
+
+// Disable static generation for this page
+export const dynamic = "force-dynamic"
+export const runtime = "edge"
 
 export default function Home() {
   const { user } = useAuth()
