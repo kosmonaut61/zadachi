@@ -1,7 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, enableNetwork } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHQVcTqdAU3MiZqjNWVm9_0YM-pfGuN_E",
@@ -31,8 +31,9 @@ if (typeof window !== 'undefined') {
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Enable offline persistence
+// Enable offline persistence and handle connection issues
 if (typeof window !== 'undefined') {
+  // Enable offline persistence
   enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
       console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
@@ -40,14 +41,17 @@ if (typeof window !== 'undefined') {
       console.warn('The current browser does not support persistence.');
     }
   });
+
+  // Enable network connection
+  enableNetwork(db).catch((err: Error) => {
+    console.error("Error enabling network:", err);
+  });
 }
 
 // Initialize Google Auth Provider with OAuth configuration
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
-  prompt: 'select_account',
-  // Add your OAuth client ID if you have one
-  // client_id: 'your-client-id.apps.googleusercontent.com'
+  prompt: 'select_account'
 });
 
 // Add scopes if needed
