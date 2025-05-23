@@ -25,7 +25,10 @@ export default function Home() {
 
     if (user) {
       console.log("[Root] User authenticated, redirecting to welcome")
-      router.push("/welcome")
+      router.replace("/welcome")
+    } else {
+      console.log("[Root] No user, redirecting to login")
+      router.replace("/login")
     }
   }, [user, router])
 

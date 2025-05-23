@@ -54,13 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only redirect if we're not already on the correct page
       if (user && pathname === "/login") {
         console.log("[AuthProvider] User on login page, redirecting to welcome")
-        // Add a small delay to ensure auth state is settled
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Use replace instead of push for more reliable navigation
         router.replace("/welcome")
       } else if (!user && pathname !== "/login") {
         console.log("[AuthProvider] User not on login page, redirecting to login")
-        // Add a small delay to ensure auth state is settled
-        await new Promise(resolve => setTimeout(resolve, 100))
         router.replace("/login")
       } else {
         console.log("[AuthProvider] User already on correct page:", pathname)
