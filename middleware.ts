@@ -11,12 +11,13 @@ export function middleware(request: NextRequest) {
 
   // If the user is logged in and trying to access the login page
   if (session && request.nextUrl.pathname.startsWith("/login")) {
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.redirect(new URL("/welcome", request.url))
   }
 
   return NextResponse.next()
 }
 
+// Configure which routes to run middleware on
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 } 

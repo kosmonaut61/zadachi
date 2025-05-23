@@ -96,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       })
+      await new Promise(resolve => setTimeout(resolve, 100))
       router.push("/welcome")
     } catch (error) {
       console.error("Google sign in error:", error)
