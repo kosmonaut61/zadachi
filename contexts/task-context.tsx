@@ -56,6 +56,7 @@ export interface TaskUsage {
 
 // Predefined tasks template (will be assigned to users when selected)
 export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
+  // Original tasks
   {
     title: "Pick up 5 items off of floor.",
     category: "cleaning",
@@ -79,6 +80,138 @@ export const predefinedTasksTemplate: Omit<Task, "id" | "userId">[] = [
     allowedUsers: [], // Empty array means all users
     timeframe: "weekly",
     frequency: 3,
+  },
+
+  // New tasks - Cleaning
+  {
+    title: "Clean bathroom sink.",
+    category: "cleaning",
+    points: 200,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 2,
+  },
+  {
+    title: "Vacuum one room.",
+    category: "cleaning",
+    points: 300,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 1,
+  },
+  {
+    title: "Make your bed.",
+    category: "cleaning",
+    points: 100,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 5,
+  },
+
+  // Exercise
+  {
+    title: "Do 10 jumping jacks.",
+    category: "exercise",
+    points: 150,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 3,
+  },
+  {
+    title: "Stretch for 5 minutes.",
+    category: "exercise",
+    points: 200,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 3,
+  },
+
+  // Water
+  {
+    title: "Drink a glass of water.",
+    category: "water",
+    points: 100,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 5,
+  },
+
+  // Home
+  {
+    title: "Help set the table.",
+    category: "home",
+    points: 150,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 3,
+  },
+  {
+    title: "Take out the trash.",
+    category: "home",
+    points: 200,
+    allowedUsers: [],
+    timeframe: "weekly",
+    frequency: 2,
+  },
+
+  // Family
+  {
+    title: "Help a family member.",
+    category: "family",
+    points: 250,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 3,
+  },
+
+  // Creativity
+  {
+    title: "Draw a picture.",
+    category: "creativity",
+    points: 200,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 2,
+  },
+
+  // Meditation
+  {
+    title: "Take 5 deep breaths.",
+    category: "meditation",
+    points: 100,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 5,
+  },
+
+  // General
+  {
+    title: "Complete homework assignment.",
+    category: "general",
+    points: 300,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 2,
+  },
+
+  // Chill
+  {
+    title: "Read for 15 minutes.",
+    category: "chill",
+    points: 200,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 3,
+  },
+
+  // Outdoors
+  {
+    title: "Water the plants.",
+    category: "outdoors",
+    points: 150,
+    allowedUsers: [],
+    timeframe: "daily",
+    frequency: 2,
   },
 ]
 
@@ -298,6 +431,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const getAvailableTasksForUser = useCallback(
     (userId: string) => {
       const now = new Date()
+      console.log("Checking available tasks for user:", userId)
+      console.log("Total predefined tasks:", predefinedTasksTemplate.length)
+      console.log("Current task usage records:", taskUsage.length)
 
       return predefinedTasksTemplate.filter((template) => {
         // Check if user is allowed to access this task
@@ -312,34 +448,50 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const usage = taskUsage.find((u) => u.taskId === taskTemplateId && u.userId === userId)
 
         // If no usage, this template is available
-        if (!usage) return true
+        if (!usage) {
+          console.log(`Task "${template.title}" available (no usage record)`)
+          return true
+        }
 
         // Check if user has reached frequency limit for this timeframe
         if (usage.usageCount >= template.frequency) {
           // Check if timeframe has reset
           const lastUsedDate = new Date(usage.lastUsedDate)
 
+          let timeframeReset = false
           switch (template.timeframe) {
             case "daily":
               // Reset if last used was yesterday or earlier
-              return (
+              timeframeReset =
                 now.getDate() !== lastUsedDate.getDate() ||
                 now.getMonth() !== lastUsedDate.getMonth() ||
                 now.getFullYear() !== lastUsedDate.getFullYear()
-              )
+              break
             case "weekly":
               // Reset if last used was in a different week
               const daysSinceLastUsed = Math.floor((now.getTime() - lastUsedDate.getTime()) / (1000 * 60 * 60 * 24))
-              return daysSinceLastUsed >= 7
+              timeframeReset = daysSinceLastUsed >= 7
+              break
             case "monthly":
               // Reset if last used was in a different month
-              return now.getMonth() !== lastUsedDate.getMonth() || now.getFullYear() !== lastUsedDate.getFullYear()
-            default:
-              return true
+              timeframeReset =
+                now.getMonth() !== lastUsedDate.getMonth() || now.getFullYear() !== lastUsedDate.getFullYear()
+              break
+          }
+
+          if (timeframeReset) {
+            console.log(`Task "${template.title}" available (timeframe reset)`)
+            return true
+          } else {
+            console.log(
+              `Task "${template.title}" unavailable (frequency limit reached: ${usage.usageCount}/${template.frequency})`,
+            )
+            return false
           }
         }
 
         // User hasn't reached frequency limit
+        console.log(`Task "${template.title}" available (under frequency limit)`)
         return true
       })
     },

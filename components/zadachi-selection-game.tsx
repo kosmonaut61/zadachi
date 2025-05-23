@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { X } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { categories } from "@/contexts/task-context"
 
@@ -39,19 +39,8 @@ export function ZadachiSelectionGame({
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null)
 
-  // Refs for wheel event handling
-  const containerRef = useRef<HTMLDivElement>(null)
-  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastWheelTime = useRef<number>(0)
-
   // Minimum swipe distance to trigger card change (in pixels)
   const minSwipeDistance = 50
-
-  // Minimum wheel delta to trigger card change
-  const minWheelDelta = 50
-
-  // Debounce time for wheel events (ms)
-  const wheelDebounceTime = 300
 
   // Select 3 random tasks with weighted selection based on frequency and timeframe
   const selectedTasks = useMemo(() => {
@@ -97,58 +86,6 @@ export function ZadachiSelectionGame({
       return () => clearTimeout(timer)
     }
   }, [open])
-
-  // Set up wheel event listener for trackpad gestures
-  useEffect(() => {
-    const currentContainer = containerRef.current
-
-    if (!currentContainer || !open) return
-
-    const handleWheel = (e: WheelEvent) => {
-      // Prevent default to avoid page scrolling
-      e.preventDefault()
-
-      // Get the horizontal scroll delta (positive = scroll right, negative = scroll left)
-      const { deltaX } = e
-
-      // Check if we should process this event (debounce)
-      const now = Date.now()
-      if (now - lastWheelTime.current < wheelDebounceTime) return
-
-      // Update last wheel time
-      lastWheelTime.current = now
-
-      // Clear any existing timeout
-      if (wheelTimeoutRef.current) {
-        clearTimeout(wheelTimeoutRef.current)
-      }
-
-      // Set a timeout to handle the wheel event
-      wheelTimeoutRef.current = setTimeout(() => {
-        // Only process if the delta is significant enough
-        if (Math.abs(deltaX) > minWheelDelta) {
-          if (deltaX > 0) {
-            // Positive deltaX = scroll right = swipe left = next card
-            goToNextCard()
-          } else {
-            // Negative deltaX = scroll left = swipe right = previous card
-            goToPrevCard()
-          }
-        }
-      }, 50) // Small delay to collect wheel events
-    }
-
-    // Add the wheel event listener
-    currentContainer.addEventListener("wheel", handleWheel, { passive: false })
-
-    // Clean up
-    return () => {
-      if (wheelTimeoutRef.current) {
-        clearTimeout(wheelTimeoutRef.current)
-      }
-      currentContainer.removeEventListener("wheel", handleWheel)
-    }
-  }, [open, selectedTasks.length])
 
   // Handle infinite card navigation
   const goToNextCard = () => {
@@ -271,7 +208,6 @@ export function ZadachiSelectionGame({
 
         {/* Card Swiper */}
         <div
-          ref={containerRef}
           className="flex-1 relative overflow-hidden flex items-center justify-center px-4"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -296,14 +232,8 @@ export function ZadachiSelectionGame({
                     isAnimating && index === currentCardIndex && "transition-none",
                   )}
                 >
-                  <Card
-                    className={cn(
-                      "w-full h-full flex flex-col border-2 shadow-xl cursor-pointer",
-                      categories[task.category].color,
-                    )}
-                    onClick={handleSelectCard}
-                  >
-                    <div className="p-6 h-full flex flex-col">
+                  <Card className={cn("w-full h-full border-2 shadow-xl", categories[task.category].color)}>
+                    <CardContent className="p-6 h-full flex flex-col">
                       {/* Category Icon */}
                       <div className="flex justify-center mb-4">
                         <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-white shadow-md">
@@ -313,33 +243,43 @@ export function ZadachiSelectionGame({
 
                       {/* Category & Points */}
                       <div className="text-center mb-4">
-                        <div className="text-xl font-semibold">
+                        <div className="text-xl font-semibold text-gray-800">
                           {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
                         </div>
-                        <div className="text-3xl font-bold">+{task.points}</div>
+                        <div className="text-3xl font-bold text-gray-900">+{task.points}</div>
                       </div>
 
                       {/* Divider */}
-                      <div className="border-t border-gray-200 my-4"></div>
+                      <div className="border-t border-gray-300 my-4"></div>
 
                       {/* Task Title */}
                       <div className="flex-1 flex items-center justify-center">
-                        <h3 className="text-2xl font-bold text-center">{task.title}</h3>
+                        <h3 className="text-2xl font-bold text-center text-gray-900">{task.title}</h3>
                       </div>
-
-                      {/* Tap to Select Hint */}
-                      <div className="mt-4 flex justify-center">
-                        <div className="text-sm text-gray-600 bg-white/80 px-3 py-1 rounded-full">Tap to select</div>
-                      </div>
-                    </div>
+                    </CardContent>
                   </Card>
                 </div>
               ))}
 
-              {/* Swipe Hint Overlay */}
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none">
-                <div className="text-white/60 text-sm">← Swipe</div>
-                <div className="text-white/60 text-sm">Swipe →</div>
+              {/* Navigation Buttons for Desktop */}
+              <div className="hidden md:block">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
+                  onClick={goToPrevCard}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
+                  onClick={goToNextCard}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
               </div>
             </div>
           )}
@@ -362,19 +302,32 @@ export function ZadachiSelectionGame({
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer with Navigation */}
         {selectedTasks.length > 0 && (
-          <div className="p-4 flex justify-center">
+          <div className="p-4 flex justify-center items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
+              onClick={goToPrevCard}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+
             <Button className="w-48 h-12 text-lg" onClick={handleSelectCard}>
               Select
             </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border-2"
+              onClick={goToNextCard}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
           </div>
         )}
-
-        {/* Trackpad Hint */}
-        <div className="absolute bottom-20 left-0 right-0 flex justify-center pointer-events-none">
-          <div className="text-white/60 text-xs bg-black/30 px-3 py-1 rounded-full">Two-finger swipe to navigate</div>
-        </div>
       </div>
     </div>
   )

@@ -26,6 +26,18 @@ export default function Home() {
     ? availableTasks.filter((task) => task.category === selectedCategory)
     : availableTasks
 
+  // Debug logging
+  console.log("All available tasks for user:", availableTasks.length)
+  console.log("User tasks:", userTasks.length)
+  console.log("Filtered available tasks:", filteredAvailableTasks.length)
+
+  // Filter out tasks that user already has (prevent stacking)
+  const tasksNotAlreadyAssigned = filteredAvailableTasks.filter(
+    (task) => !userTasks.some((userTask) => userTask.title === task.title && userTask.category === task.category),
+  )
+
+  console.log("Tasks not already assigned:", tasksNotAlreadyAssigned.length)
+
   const handleAddTask = (taskTemplate: ReturnType<typeof getAvailableTasksForUser>[0]) => {
     addTask({
       ...taskTemplate,
@@ -106,10 +118,7 @@ export default function Home() {
         <ZadachiSelectionGame
           open={showTaskSelection}
           onOpenChange={setShowTaskSelection}
-          availableTasks={filteredAvailableTasks.filter(
-            (task) =>
-              !userTasks.some((userTask) => userTask.title === task.title && userTask.category === task.category),
-          )}
+          availableTasks={tasksNotAlreadyAssigned}
           onSelectTask={handleAddTask}
           userName={`${currentUser.firstName} ${currentUser.lastName}`}
         />
