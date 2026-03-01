@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   generator: 'v0.app',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0b1f24',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
