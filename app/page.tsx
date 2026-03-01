@@ -19,7 +19,7 @@ export default function Page() {
   const [showTasks, setShowTasks] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [selectedFace, setSelectedFace] = useState<ClockFace>('Blind')
-  const [selectedPalette, setSelectedPalette] = useState<Palette>('halio')
+  const [selectedPalette, setSelectedPalette] = useState<Palette>('zadachi')
   const [tasks, setTasks] = useState<Task[]>([])
   const hideTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -44,7 +44,7 @@ export default function Page() {
     const timer = setInterval(() => setTime(new Date()), 1000)
     
     // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem('halio-onboarding-complete')
+    const hasCompletedOnboarding = localStorage.getItem('zadachi-onboarding-complete')
     if (!hasCompletedOnboarding) {
       setShowOnboarding(true)
     }
@@ -72,7 +72,7 @@ export default function Page() {
     setShortBreakDuration(settings.shortBreakDuration)
     setLongBreakDuration(settings.longBreakDuration)
     setSessionsBeforeLongBreak(settings.sessionsBeforeLongBreak)
-    localStorage.setItem('halio-onboarding-complete', 'true')
+    localStorage.setItem('zadachi-onboarding-complete', 'true')
     setShowOnboarding(false)
   }
 

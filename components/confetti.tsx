@@ -8,7 +8,7 @@ interface ConfettiProps {
   palette?: Palette
 }
 
-export function Confetti({ active, palette = 'halio' }: ConfettiProps) {
+export function Confetti({ active, palette = 'zadachi' }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

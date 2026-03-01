@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 const _geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
-  title: 'Halio - 24 Hour Time',
-  description: 'Experience time in 24-hour chunks with beautiful clock designs',
+  title: 'Zadachi - 24 Hour Time',
+  description: 'Zadachi: 24-hour focus clock with tasks and sessions',
   generator: 'v0.app',
 }
 

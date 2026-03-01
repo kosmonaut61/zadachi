@@ -21,7 +21,7 @@ interface OnboardingProps {
 }
 
 const paletteConfigs: { key: Palette; label: string }[] = [
-  { key: 'halio', label: 'Halio' },
+  { key: 'zadachi', label: 'Zadachi' },
   { key: 'highlighter', label: 'Highlighter' },
   { key: 'stoplight', label: 'Stoplight' },
   { key: 'neon', label: 'Neon' },
@@ -30,7 +30,7 @@ const paletteConfigs: { key: Palette; label: string }[] = [
 
 export function Onboarding({ isOpen, onComplete, colors: c, onPaletteChange, onFaceChange }: OnboardingProps) {
   const [step, setStep] = useState(1)
-  const [selectedPalette, setSelectedPalette] = useState<Palette>('halio')
+  const [selectedPalette, setSelectedPalette] = useState<Palette>('zadachi')
   const [selectedFace, setSelectedFace] = useState<ClockFace>('Blind')
   const [workDuration, setWorkDuration] = useState(25)
   const [shortBreakDuration, setShortBreakDuration] = useState(5)
@@ -114,7 +114,7 @@ export function Onboarding({ isOpen, onComplete, colors: c, onPaletteChange, onF
         {step === 1 && (
           <>
             <h2 className="font-mono text-3xl font-bold mb-3" style={{ color: c.light }}>
-              Welcome to Halio
+              Welcome to Zadachi
             </h2>
             <p className="font-mono text-sm mb-6" style={{ color: c.light, opacity: 0.8 }}>
               All clock faces display time in 24-hour format. Swipe to explore:

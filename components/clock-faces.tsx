@@ -404,7 +404,7 @@ interface ClockFacePreviewProps {
 }
 
 export function ClockFacePreview({ face, selected, onClick, colors }: ClockFacePreviewProps) {
-  const c = colors || palettes.halio
+  const c = colors || palettes.zadachi
   const hourAngle = 10 * 15 + 10 * 0.25 + 90
   const minuteAngle = 10 * 6 + 90
   const secondAngle = 0 + 90

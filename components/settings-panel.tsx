@@ -59,7 +59,7 @@ function PaletteDonut({ colors, strokeColor }: { colors: string[]; strokeColor: 
 }
 
 const paletteConfigs: { key: Palette; label: string }[] = [
-  { key: 'halio', label: 'Halio' },
+  { key: 'zadachi', label: 'Zadachi' },
   { key: 'highlighter', label: 'Highlighter' },
   { key: 'stoplight', label: 'Stoplight' },
   { key: 'neon', label: 'Neon' },

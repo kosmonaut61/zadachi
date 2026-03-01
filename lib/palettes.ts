@@ -1,4 +1,4 @@
-export type Palette = 'halio' | 'highlighter' | 'stoplight' | 'neon' | 'garden'
+export type Palette = 'zadachi' | 'highlighter' | 'stoplight' | 'neon' | 'garden'
 
 export interface PaletteColors {
   // DARK category - used for backgrounds, text on light surfaces, outlines
@@ -13,7 +13,7 @@ export interface PaletteColors {
 }
 
 export const palettes: Record<Palette, PaletteColors> = {
-  halio: {
+  zadachi: {
     bg: '#001F27',       // Ink Black
     face: '#003A35',     // Evergreen
     dark: '#001F27',     // Ink Black (text/outlines on light)
