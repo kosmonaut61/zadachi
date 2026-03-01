@@ -1,41 +1,25 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { UserProvider } from "@/contexts/user-context"
-import { TaskProvider } from "@/contexts/task-context"
-import { Toaster } from "@/components/toaster"
-import { AuthProvider } from "@/contexts/auth-context"
-import { Nav } from "@/components/nav"
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 
-const inter = Inter({ subsets: ["latin"] })
+import './globals.css'
+
+const _geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
+const _geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
-  title: "Zadachi",
-  description: "Family task management and rewards system",
+  title: 'Halio - 24 Hour Time',
+  description: 'Experience time in 24-hour chunks with beautiful clock designs',
+  generator: 'v0.app',
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            <UserProvider>
-              <TaskProvider>
-                <Nav />
-                {children}
-                <Toaster />
-              </TaskProvider>
-            </UserProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </body>
+    <html lang="en" className={`${_geist.variable} ${_geistMono.variable}`}>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }
