@@ -230,6 +230,16 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Top Center - Dev Badge */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <span
+          className="inline-flex items-center rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em]"
+          style={{ borderColor: `${c.accent1}80`, color: c.accent1, backgroundColor: `${c.face}B3` }}
+        >
+          DEV
+        </span>
+      </div>
+
       {/* Top Right - Tasks & Settings Buttons */}
       <div className={`absolute top-8 right-8 flex gap-4 transition-opacity duration-500 z-20 ${showUI ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <button 
